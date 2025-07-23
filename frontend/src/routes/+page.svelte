@@ -1,11 +1,24 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   let selectedFile: File | null = null;
-  let problemId = "1"; // default to 1, or let user choose
-  let language = "cpp"; // default, or let user choose
+  let problemId = "";
+  let language = "cpp";
   let responseMessage = "";
+  let problems: string[] = [];
   let submissionId = "";
-  let judgeStatus = "";
   let verdicts: { testcase: number, verdict: string }[] = [];
+  let judgeStatus = "";
+
+  onMount(async () => {
+    try {
+      const res = await fetch("http://localhost:5000/general/problems");
+      const data = await res.json();
+      problems = data.problems || [];
+      if (problems.length > 0) problemId = problems[0];
+    } catch (err) {
+      responseMessage = "Failed to fetch problems: " + err;
+    }
+  });
 
   function handleFileChange(event: Event) {
     selectedFile = (event.target as HTMLInputElement).files?.[0] ?? null;
@@ -41,12 +54,12 @@
     if (!submissionId) return;
     judgeStatus = "Checking...";
     try {
+      // The judge server is on port 3000
       const res = await fetch(`http://localhost:5000/submission/status/${submissionId}`);
       const data = await res.json();
-      // Only show verdicts if results are present
       if (data.results && Array.isArray(data.results)) {
         verdicts = data.results;
-        judgeStatus = ""; // Clear the raw status
+        judgeStatus = "";
       } else {
         judgeStatus = data.status || JSON.stringify(data, null, 2);
       }
@@ -71,8 +84,12 @@
 
   <div>
     <label>
-      Problem ID:
-      <input type="text" bind:value={problemId} />
+      Problem:
+      <select bind:value={problemId}>
+        {#each problems as pid}
+          <option value={pid}>{pid}</option>
+        {/each}
+      </select>
     </label>
     <label>
       Language:
@@ -88,9 +105,6 @@
   {/if}
 
   <button on:click={submitSolution}>Submit Solution</button>
-  {#if responseMessage}
-    <p>{responseMessage}</p>
-  {/if}
   {#if submissionId}
     <p>Submission ID: {submissionId}</p>
     {#if verdicts.length > 0}
