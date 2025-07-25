@@ -1,1 +1,1 @@
-A competitive programming tournament hosting website.
+A competitive programming tournament hosting website. Built using Flask + Svelte.
