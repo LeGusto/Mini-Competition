@@ -44,6 +44,7 @@ def submit_solution():
     try:
         solution = Solution(**data)
     except Exception as e:
+        os.remove(file_path)
         return jsonify({"message": str(e)}), 400
 
     # Forward to judge server
@@ -55,12 +56,10 @@ def submit_solution():
             judge_response = requests.post(judge_url, files=files, data=payload)
             judge_response.raise_for_status()
         except requests.RequestException as e:
+            os.remove(file_path)
             return jsonify({"message": f"Failed to contact judge server: {e}"}), 500
 
-    # Optionally, delete the file after forwarding
     os.remove(file_path)
-
-    # Return the judge server's response
     return jsonify(judge_response.json()), judge_response.status_code
 
 

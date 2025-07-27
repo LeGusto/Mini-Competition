@@ -24,6 +24,17 @@
     selectedFile = (event.target as HTMLInputElement).files?.[0] ?? null;
   }
 
+  function viewProblemStatement() {
+    if (!problemId) {
+      alert("Please select a problem first");
+      return;
+    }
+    
+    // Open the PDF in a new tab
+    const pdfUrl = `http://localhost:5000/general/problem/${problemId}/statement`;
+    window.open(pdfUrl, '_blank');
+  }
+
   async function submitSolution() {
     if (!selectedFile) {
       responseMessage = "Please select a file.";
@@ -78,11 +89,15 @@
     This is a competitive programming platform for small competitions.<br>
     Please log in or register to get started.
   </p>
+  
+  <div class="nav-links">
+    <a href="/problem" class="nav-link">📄 View Problem Statements</a>
+  </div>
 
   <h2>Upload a file</h2>
   <input type="file" on:change={handleFileChange} />
 
-  <div>
+  <div class="problem-section">
     <label>
       Problem:
       <select bind:value={problemId}>
@@ -91,6 +106,12 @@
         {/each}
       </select>
     </label>
+    <button class="view-statement-btn" on:click={viewProblemStatement}>
+      📄 View Problem Statement
+    </button>
+  </div>
+  
+  <div>
     <label>
       Language:
       <select bind:value={language}>
@@ -132,5 +153,69 @@
   }
   h1 {
     color: #2d6cdf;
+  }
+  .problem-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+  .view-statement-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+  }
+  .view-statement-btn:hover {
+    background: #218838;
+  }
+  label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  select {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    margin: 1rem 0;
+    transition: background-color 0.2s;
+  }
+  button:hover {
+    background: #0056b3;
+  }
+  .nav-links {
+    margin: 2rem 0;
+    text-align: center;
+  }
+  .nav-link {
+    display: inline-block;
+    background: #17a2b8;
+    color: white;
+    text-decoration: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+  .nav-link:hover {
+    background: #138496;
   }
 </style>
