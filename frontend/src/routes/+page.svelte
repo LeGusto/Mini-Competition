@@ -1,5 +1,30 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { authStore } from '$lib/stores/auth';
+
+  const { token } = authStore;
+
+  onMount(async () => {
+    const res = await fetch("http://localhost:5000/general/problems");
+    const data = await res.json();
+    problems = data.problems || [];
+    if (problems.length > 0) problemId = problems[0];
+});
+</script>
+
+<main>
+  {#if token}
+    <h1>Welcome {token.username}</h1>
+  {:else}
+    <h1>Welcome to Mini-Competition!</h1>
+    <p>
+      This is a competitive programming platform for small competitions.<br>
+      Please log in or register to get started.
+    </p>
+  {/else}
+    {/if}
+</main>
+  import { onMount } from 'svelte';
   let selectedFile: File | null = null;
   let problemId = "";
   let language = "cpp";
@@ -218,4 +243,4 @@
   .nav-link:hover {
     background: #138496;
   }
-</style>
+</style> -->

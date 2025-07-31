@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from models.solution import Solution
 from werkzeug.utils import secure_filename
+from services.decorators import require_auth
 import os
 import uuid
 import requests
@@ -12,7 +13,10 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 @submission_bp.route("/submission/submit", methods=["POST"])
+@require_auth
 def submit_solution():
+    """Submit a solution to a problem"""
+
     # Check for required fields and file
     if (
         "file" not in request.files
@@ -56,6 +60,7 @@ def submit_solution():
             judge_response = requests.post(judge_url, files=files, data=payload)
             judge_response.raise_for_status()
         except requests.RequestException as e:
+            print(e)
             os.remove(file_path)
             return jsonify({"message": f"Failed to contact judge server: {e}"}), 500
 
@@ -64,7 +69,9 @@ def submit_solution():
 
 
 @submission_bp.route("/submission/status/<submission_id>", methods=["GET"])
+@require_auth
 def get_submission_status(submission_id):
+    """Proxy to the judge server to get submission status"""
     try:
         judge_url = "http://localhost:3000/submission/" + submission_id
         response = requests.get(judge_url, params={"submission_id": submission_id})

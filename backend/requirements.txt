@@ -1,2 +1,6 @@
 flask
 flask-cors
+psycopg2-binary
+bcrypt
+jwt
+requests

@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, Response
 from models.solution import Solution
 from werkzeug.utils import secure_filename
+from services.decorators import require_auth
 import os
 import uuid
 import requests
@@ -10,6 +11,7 @@ general_bp = Blueprint("general", __name__)
 
 
 @general_bp.route("/general/problems", methods=["GET"])
+@require_auth
 def get_problems():
     """Proxy to the judge server to get problem ids"""
     judge_url = "http://localhost:3000/problems"
@@ -24,6 +26,7 @@ def get_problems():
 
 
 @general_bp.route("/general/problem/<problem_id>/statement", methods=["GET"])
+@require_auth
 def get_problem_statement(problem_id):
     """Proxy to the judge server to get problem statement PDF"""
     judge_url = f"http://localhost:3000/problem/{problem_id}/statement"
