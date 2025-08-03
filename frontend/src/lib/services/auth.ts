@@ -9,7 +9,7 @@ interface LoginData {
 
 interface RegisterData {
   username: string;
-  email: string;
+  email?: string;
   password: string;
 }
 
@@ -33,8 +33,7 @@ class AuthService {
       });
 
       const result = await response.json();
-
-      if (response.ok && result.success) {
+      if (response.ok && result.token) {
         authStore.setAuth(result.user, result.token);
         return { success: true, user: result.user, token: result.token };
       } else {
@@ -58,7 +57,7 @@ class AuthService {
 
       const result = await response.json();
 
-      if (response.ok && result.success) {
+      if (response.ok && result.user) {
         return { success: true, user: result.user };
       } else {
         return { success: false, error: result.error || 'Registration failed' };

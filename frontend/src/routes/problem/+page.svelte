@@ -1,7 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { PageData } from './$types';
-  
+  import { authStore } from '$lib/stores/auth';
+  import { authService } from '$lib/services/auth';
   export let data: PageData;
   
   let problems: string[] = [];
@@ -19,8 +20,9 @@
 
   async function loadProblems() {
     try {
-      const res = await fetch("http://localhost:5000/general/problems");
-      const data = await res.json();
+      // Use authenticated request
+      const response = await authService.authenticatedRequest("http://localhost:5000/general/problems");
+      const data = await response.json();
       problems = data.problems || [];
       if (problems.length > 0 && !selectedProblem) {
         selectedProblem = problems[0];
@@ -37,16 +39,10 @@
     error = '';
     
     try {
-      // First check if the PDF exists by making a HEAD request with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const response = await fetch(`http://localhost:5000/general/problem/${selectedProblem}/statement`, {
-        method: 'HEAD',
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
+      // Use authenticated request for problem statement
+      const response = await authService.authenticatedRequest(
+        `http://localhost:5000/general/problem/${selectedProblem}/statement`
+      );
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -58,12 +54,7 @@
     } catch (err) {
       loading = false;
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      
-      if (err instanceof Error && err.name === 'AbortError') {
-        error = 'Request timed out. The server might be slow or unavailable.';
-      } else {
-        error = `Failed to load PDF: ${errorMessage}. Please check if the problem statement exists.`;
-      }
+      error = `Failed to load PDF: ${errorMessage}. Please check if the problem statement exists.`;
     }
   }
 

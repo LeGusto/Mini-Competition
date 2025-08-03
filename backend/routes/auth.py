@@ -21,15 +21,29 @@ def login():
     if not username or not password:
         return jsonify({"message": "Username and password are required"}), 400
 
-    user = AuthService().get_user_by_username(username)
+    auth_service = AuthService()
+    user = auth_service.get_user(username)
     if not user:
         return jsonify({"message": "Invalid username or password"}), 401
 
-    if not AuthService().verify_password(password, user[2]):
+    if not auth_service.verify_password(password, user["password"]):
         return jsonify({"message": "Invalid username or password"}), 401
 
-    token = AuthService().generate_token(user[0], user[1], user[3])
-    return jsonify({"message": "Login successful", "token": token, "user": user}), 200
+    token = auth_service.generate_token(user["id"], user["username"])
+    return (
+        jsonify(
+            {
+                "message": "Login successful",
+                "token": token,
+                "user": {
+                    "id": user["id"],
+                    "username": user["username"],
+                    "role": user["role"],
+                },
+            }
+        ),
+        200,
+    )
 
 
 @auth_bp.route("/auth/register", methods=["POST"])
@@ -42,8 +56,24 @@ def register():
     if not username or not password:
         return jsonify({"message": "Username and password are required"}), 400
 
-    user = AuthService().create_user(username, password)
-    return jsonify({"message": "User created successfully", "user": user}), 201
+    try:
+        auth_service = AuthService()
+        user = auth_service.create_user(username, password)
+        return (
+            jsonify(
+                {
+                    "message": "User created successfully",
+                    "user": {
+                        "id": user["id"],
+                        "username": user["username"],
+                        "role": user["role"],
+                    },
+                }
+            ),
+            201,
+        )
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
 
 
 @auth_bp.route("/auth/verify", methods=["POST"])
@@ -55,7 +85,8 @@ def verify_token():
         return jsonify({"valid": False, "error": "Token required"}), 400
 
     try:
-        payload = AuthService().verify_token(data["token"])
+        auth_service = AuthService()
+        payload = auth_service.verify_token(data["token"])
         return jsonify({"valid": True, "user": payload}), 200
     except Exception as e:
         return jsonify({"valid": False, "error": str(e)}), 401
