@@ -48,3 +48,8 @@ def get_problem_statement(problem_id):
         )
     except requests.RequestException as e:
         return jsonify({"message": f"Failed to get problem statement: {e}"}), 500
+
+
+@general_bp.route("/healthcheck", methods=["GET"])
+def healthcheck():
+    return jsonify({"message": "OK"}), 200

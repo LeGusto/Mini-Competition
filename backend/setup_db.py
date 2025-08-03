@@ -16,7 +16,7 @@ def create_database():
     try:
         # Connect to default postgres database
         conn = psycopg2.connect(
-            host="localhost", database="postgres", user="postgres", password="postgres"
+            host="postgres", database="postgres", user="postgres", password="postgres"
         )
         conn.autocommit = True
         cursor = conn.cursor()
@@ -47,7 +47,7 @@ def setup_tables():
     try:
         # Connect to mini_competition_db
         conn = psycopg2.connect(
-            host="localhost",
+            host="postgres",
             database="mini_competition_db",
             user="postgres",
             password="postgres",
@@ -111,7 +111,7 @@ def main():
     # Check if PostgreSQL is running
     try:
         psycopg2.connect(
-            host="localhost", database="postgres", user="postgres", password="postgres"
+            host="postgres", database="postgres", user="postgres", password="postgres"
         )
     except Exception as e:
         print("❌ Cannot connect to PostgreSQL!")

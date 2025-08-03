@@ -13,7 +13,7 @@ class AuthService:
 
     def __init__(self):
         self.conn = psycopg2.connect(
-            host="localhost",
+            host="postgres",
             database="mini_competition_db",
             user="postgres",
             password="postgres",

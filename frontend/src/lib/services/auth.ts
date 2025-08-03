@@ -1,5 +1,6 @@
 import { authStore } from '../stores/auth';
 
+// For browser access, always use localhost since the browser runs outside Docker
 const API_BASE = 'http://localhost:5000';
 
 interface LoginData {
