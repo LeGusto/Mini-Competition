@@ -2,8 +2,14 @@
   import { authService } from '$lib/services/auth';
   import { goto } from '$app/navigation';
   
-  let username = '';
-  let password = '';
+  // Login form variables
+  let loginUsername = '';
+  let loginPassword = '';
+  
+  // Register form variables
+  let registerUsername = '';
+  let registerPassword = '';
+  
   let loading = false;
   let error = '';
 
@@ -11,7 +17,7 @@
     loading = true;
     error = '';
     
-    const result = await authService.login({ username, password });
+    const result = await authService.login({ username: loginUsername, password: loginPassword });
     
     if (result.success) {
       await goto('/');
@@ -26,7 +32,7 @@
     loading = true;
     error = '';
     
-    const result = await authService.register({ username, password});
+    const result = await authService.register({ username: registerUsername, password: registerPassword });
     
     if (result.success) {
       await goto('/');
@@ -41,8 +47,8 @@
 <main>
     <h1>Login</h1>
     <form on:submit|preventDefault={handleLogin}>
-        <input type="text" bind:value={username} placeholder="Username" required />
-        <input type="password" bind:value={password} placeholder="Password" required />
+        <input type="text" bind:value={loginUsername} placeholder="Username" required />
+        <input type="password" bind:value={loginPassword} placeholder="Password" required />
         <button type="submit" disabled={loading}>
           {loading ? 'Logging in...' : 'Login'}
         </button>
@@ -53,8 +59,8 @@
 
     <h1>Register</h1>
     <form on:submit|preventDefault={handleRegister}>
-        <input type="text" bind:value={username} placeholder="Username" required />
-        <input type="password" bind:value={password} placeholder="Password" required />
+        <input type="text" bind:value={registerUsername} placeholder="Username" required />
+        <input type="password" bind:value={registerPassword} placeholder="Password" required />
         <button type="submit" disabled={loading}>
           {loading ? 'Registering...' : 'Register'}
         </button>
