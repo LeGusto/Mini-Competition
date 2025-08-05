@@ -28,6 +28,25 @@ CREATE TABLE IF NOT EXISTS submissions (
     judge_response JSONB
 );
 
+CREATE TABLE IF NOT EXISTS contests (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    problems JSONB
+);
+
+CREATE TABLE IF NOT EXISTS contest_participants (
+    id SERIAL PRIMARY KEY,
+    contest_id INTEGER REFERENCES contests(id),
+    user_id INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create index for better performance
 CREATE INDEX IF NOT EXISTS idx_submissions_user_id ON submissions(user_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_problem_id ON submissions(problem_id);
