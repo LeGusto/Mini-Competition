@@ -19,13 +19,12 @@ CREATE TABLE IF NOT EXISTS users (
 -- Create submissions table for tracking user submissions
 CREATE TABLE IF NOT EXISTS submissions (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
     problem_id VARCHAR(50) NOT NULL,
     language VARCHAR(50) NOT NULL,
-    file_name VARCHAR(255) NOT NULL,
     submission_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(50) DEFAULT 'pending',
-    judge_response JSONB
+    judge_response JSONB,
+    user_id INTEGER REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS contests (

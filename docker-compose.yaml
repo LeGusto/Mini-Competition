@@ -5,6 +5,7 @@ services:
       dockerfile: docker/Dockerfile
     ports:
       - "5000:5000"
+    network_mode: host
     environment:
       - FLASK_ENV=development
       - JWT_SECRET=your-secret-key-change-this

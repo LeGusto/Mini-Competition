@@ -7,7 +7,15 @@ def get_token_from_request():
     """
     Get the token from the request headers
     """
-    return request.headers.get("Authorization")
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        return None
+
+    # Handle Bearer token format
+    if auth_header.startswith("Bearer "):
+        return auth_header[7:]  # Remove "Bearer " prefix
+
+    return auth_header
 
 
 def require_auth(f):

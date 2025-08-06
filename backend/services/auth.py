@@ -13,7 +13,7 @@ class AuthService:
 
     def __init__(self):
         self.conn = psycopg2.connect(
-            host="postgres",
+            host="localhost",
             database="mini_competition_db",
             user="postgres",
             password="postgres",
@@ -136,3 +136,58 @@ class AuthService:
             return self.generate_token(user["id"], user["username"])
         else:
             raise Exception("Invalid username or password")
+
+    def login_user(self, username, password):
+        """
+        Complete login flow - validates credentials and returns user data with token
+        """
+        if not username or not password:
+            raise Exception("Username and password are required")
+
+        user = self.get_user(username)
+        if not user:
+            raise Exception("Invalid username or password")
+
+        if not self.verify_password(password, user["password"]):
+            raise Exception("Invalid username or password")
+
+        token = self.generate_token(user["id"], user["username"])
+
+        return {
+            "message": "Login successful",
+            "token": token,
+            "user": {
+                "id": user["id"],
+                "username": user["username"],
+                "role": user["role"],
+            },
+        }
+
+    def register_user(self, username, password):
+        """
+        Complete registration flow - creates new user and returns user data
+        """
+        if not username or not password:
+            raise Exception("Username and password are required")
+
+        user = self.create_user(username, password)
+
+        return {
+            "message": "User created successfully",
+            "user": {
+                "id": user["id"],
+                "username": user["username"],
+                "role": user["role"],
+            },
+        }
+
+    def verify_user_token(self, token):
+        """
+        Complete token verification flow - validates token and returns user data
+        """
+        if not token:
+            raise Exception("Token required")
+
+        payload = self.verify_token(token)
+
+        return {"valid": True, "user": payload}

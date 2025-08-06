@@ -10,6 +10,8 @@ import pathlib
 
 auth_bp = Blueprint("auth", __name__)
 
+auth_service = AuthService()
+
 
 @auth_bp.route("/auth/login", methods=["POST"])
 def login():
@@ -18,32 +20,11 @@ def login():
     username = data.get("username")
     password = data.get("password")
 
-    if not username or not password:
-        return jsonify({"message": "Username and password are required"}), 400
-
-    auth_service = AuthService()
-    user = auth_service.get_user(username)
-    if not user:
-        return jsonify({"message": "Invalid username or password"}), 401
-
-    if not auth_service.verify_password(password, user["password"]):
-        return jsonify({"message": "Invalid username or password"}), 401
-
-    token = auth_service.generate_token(user["id"], user["username"])
-    return (
-        jsonify(
-            {
-                "message": "Login successful",
-                "token": token,
-                "user": {
-                    "id": user["id"],
-                    "username": user["username"],
-                    "role": user["role"],
-                },
-            }
-        ),
-        200,
-    )
+    try:
+        result = auth_service.login_user(username, password)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 401
 
 
 @auth_bp.route("/auth/register", methods=["POST"])
@@ -53,25 +34,9 @@ def register():
     username = data.get("username")
     password = data.get("password")
 
-    if not username or not password:
-        return jsonify({"message": "Username and password are required"}), 400
-
     try:
-        auth_service = AuthService()
-        user = auth_service.create_user(username, password)
-        return (
-            jsonify(
-                {
-                    "message": "User created successfully",
-                    "user": {
-                        "id": user["id"],
-                        "username": user["username"],
-                        "role": user["role"],
-                    },
-                }
-            ),
-            201,
-        )
+        result = auth_service.register_user(username, password)
+        return jsonify(result), 201
     except Exception as e:
         return jsonify({"message": str(e)}), 400
 
@@ -80,13 +45,10 @@ def register():
 def verify_token():
     """Verify a token"""
     data = request.get_json()
-
-    if not data or "token" not in data:
-        return jsonify({"valid": False, "error": "Token required"}), 400
+    token = data.get("token") if data else None
 
     try:
-        auth_service = AuthService()
-        payload = auth_service.verify_token(data["token"])
-        return jsonify({"valid": True, "user": payload}), 200
+        result = auth_service.verify_user_token(token)
+        return jsonify(result), 200
     except Exception as e:
         return jsonify({"valid": False, "error": str(e)}), 401

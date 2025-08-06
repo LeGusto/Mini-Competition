@@ -11,6 +11,18 @@
   let loading = false;
   let error = '';
 
+  // Submission variables
+  let selectedFile: File | null = null;
+  let selectedLanguage = 'cpp';
+  let submitting = false;
+  let submissionResult: any = null;
+  let submissionError = '';
+
+  const languages = [
+    { value: 'cpp', label: 'C++' },
+    { value: 'python', label: 'Python' }
+  ];
+
   onMount(async () => {
     await loadProblems();
     if (selectedProblem) {
@@ -48,8 +60,9 @@
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
-      // If the PDF exists, set the URL for the iframe
-      pdfUrl = `http://localhost:5000/general/problem/${selectedProblem}/statement`;
+      // Create a blob URL from the response
+      const blob = await response.blob();
+      pdfUrl = URL.createObjectURL(blob);
       loading = false;
     } catch (err) {
       loading = false;
@@ -58,19 +71,96 @@
     }
   }
 
-  function downloadPDF() {
-    if (!selectedProblem) return;
-    
-    const link = document.createElement('a');
-    link.href = `http://localhost:5000/general/problem/${selectedProblem}/statement`;
-    link.download = `problem_${selectedProblem}_statement.pdf`;
-    link.click();
+  function handleFileSelect(event: Event) {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      selectedFile = target.files[0];
+    }
   }
 
-  function openInNewTab() {
+  async function submitSolution() {
+    if (!selectedFile || !selectedProblem) {
+      submissionError = 'Please select a file and problem.';
+      return;
+    }
+
+    submitting = true;
+    submissionError = '';
+    submissionResult = null;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('problem_id', selectedProblem);
+      formData.append('language', selectedLanguage);
+
+      const response = await authService.authenticatedRequest(
+        'http://localhost:5000/submission/submit',
+        {
+          method: 'POST',
+          body: formData
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
+
+      submissionResult = await response.json();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      submissionError = `Failed to submit solution: ${errorMessage}`;
+    } finally {
+      submitting = false;
+    }
+  }
+
+  async function downloadPDF() {
     if (!selectedProblem) return;
     
-    window.open(`http://localhost:5000/general/problem/${selectedProblem}/statement`, '_blank');
+    try {
+      const response = await authService.authenticatedRequest(
+        `http://localhost:5000/general/problem/${selectedProblem}/statement`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `problem_${selectedProblem}_statement.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      error = `Failed to download PDF: ${errorMessage}`;
+    }
+  }
+
+  async function openInNewTab() {
+    if (!selectedProblem) return;
+    
+    try {
+      const response = await authService.authenticatedRequest(
+        `http://localhost:5000/general/problem/${selectedProblem}/statement`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      // Note: We can't revoke the URL here as it's used in a new tab
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      error = `Failed to open PDF: ${errorMessage}`;
+    }
   }
 </script>
 
@@ -124,6 +214,56 @@
         title="Problem Statement PDF"
         class="pdf-viewer"
       ></iframe>
+    </div>
+
+    <!-- Submission Section -->
+    <div class="submission-section">
+      <h2>📤 Submit Solution</h2>
+      
+      <div class="submission-form">
+        <div class="form-group">
+          <label for="languageSelect">Language:</label>
+          <select id="languageSelect" bind:value={selectedLanguage}>
+            {#each languages as lang}
+              <option value={lang.value}>{lang.label}</option>
+            {/each}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="fileInput">Solution File:</label>
+          <input 
+            type="file" 
+            id="fileInput" 
+            accept=".cpp,.py,.c,.java"
+            on:change={handleFileSelect}
+          />
+          {#if selectedFile}
+            <span class="file-info">Selected: {selectedFile.name}</span>
+          {/if}
+        </div>
+
+        <button 
+          class="btn btn-success" 
+          on:click={submitSolution}
+          disabled={!selectedFile || submitting}
+        >
+          {submitting ? 'Submitting...' : 'Submit Solution'}
+        </button>
+      </div>
+
+      {#if submissionError}
+        <div class="error">
+          {submissionError}
+        </div>
+      {/if}
+
+      {#if submissionResult}
+        <div class="success">
+          <h3>Submission Result:</h3>
+          <pre>{JSON.stringify(submissionResult, null, 2)}</pre>
+        </div>
+      {/if}
     </div>
   {:else if !loading && !error}
     <div class="no-problem">
@@ -198,6 +338,15 @@
     background: #7f8c8d;
   }
 
+  .btn-success {
+    background: #27ae60;
+    color: white;
+  }
+
+  .btn-success:hover:not(:disabled) {
+    background: #229954;
+  }
+
   .problem-selector {
     margin-bottom: 2rem;
     padding: 1.5rem;
@@ -227,12 +376,74 @@
     border: 1px solid #dee2e6;
     border-radius: 8px;
     overflow: hidden;
+    margin-bottom: 2rem;
   }
 
   .pdf-viewer {
     width: 100%;
     height: 100%;
     border: none;
+  }
+
+  .submission-section {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+  }
+
+  .submission-section h2 {
+    margin: 0 0 1.5rem 0;
+    color: #2c3e50;
+  }
+
+  .submission-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-group label {
+    font-weight: 600;
+    color: #495057;
+  }
+
+  .form-group select,
+  .form-group input[type="file"] {
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: white;
+  }
+
+  .file-info {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-style: italic;
+  }
+
+  .success {
+    background: #d4edda;
+    color: #155724;
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid #c3e6cb;
+    margin-top: 1rem;
+  }
+
+  .success pre {
+    background: white;
+    padding: 1rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 0;
   }
 
   .loading {
@@ -284,6 +495,10 @@
 
     .pdf-container {
       height: 50vh;
+    }
+
+    .submission-form {
+      gap: 1rem;
     }
   }
 </style> 

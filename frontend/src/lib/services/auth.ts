@@ -81,11 +81,19 @@ class AuthService {
 
   // Make authenticated API request
   async authenticatedRequest(url: string, options: RequestInit = {}): Promise<Response> {
-    const headers = {
-      ...this.getAuthHeaders(),
-      'Content-Type': 'application/json',
-      ...options.headers
+    const headers: Record<string, string> = {
+      ...this.getAuthHeaders()
     };
+
+    // Add any custom headers from options
+    if (options.headers) {
+      Object.assign(headers, options.headers);
+    }
+
+    // Only set Content-Type for JSON requests if not already set and not FormData
+    if (!headers['Content-Type'] && !url.includes('/statement') && !(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     const response = await fetch(url, { ...options, headers });
 
