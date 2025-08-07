@@ -5,11 +5,19 @@ services:
       dockerfile: docker/Dockerfile
     ports:
       - "5000:5000"
-    network_mode: host
+    networks:
+      - shared-network
     environment:
       - FLASK_ENV=development
       - JWT_SECRET=your-secret-key-change-this
       - JWT_EXPIRATION=3600
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=mini_competition_db
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - JUDGE_HOST=mini-judge
+      - JUDGE_PORT=3000
     volumes:
       - ./backend:/app/backend
       - /var/run/docker.sock:/var/run/docker.sock
@@ -33,6 +41,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - shared-network
     restart: unless-stopped
 
   frontend:
@@ -43,7 +53,14 @@ services:
       - "5173:5173"
     volumes:
       - ./frontend:/app/frontend
+    networks:
+      - shared-network
     restart: unless-stopped
+
+networks:
+  shared-network:
+    external: true
+    name: mini-competition-network
 
 volumes:
   postgres_data: 

@@ -9,6 +9,7 @@ import os
 import sys
 from pathlib import Path
 from services.auth import AuthService
+from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 
 
 def create_database():
@@ -16,7 +17,7 @@ def create_database():
     try:
         # Connect to default postgres database
         conn = psycopg2.connect(
-            host="postgres", database="postgres", user="postgres", password="postgres"
+            host=DB_HOST, database="postgres", user=DB_USER, password=DB_PASSWORD
         )
         conn.autocommit = True
         cursor = conn.cursor()
@@ -47,10 +48,10 @@ def setup_tables():
     try:
         # Connect to mini_competition_db
         conn = psycopg2.connect(
-            host="postgres",
-            database="mini_competition_db",
-            user="postgres",
-            password="postgres",
+            host=DB_HOST,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
         )
         conn.autocommit = True
         cursor = conn.cursor()
@@ -111,14 +112,14 @@ def main():
     # Check if PostgreSQL is running
     try:
         psycopg2.connect(
-            host="postgres", database="postgres", user="postgres", password="postgres"
+            host=DB_HOST, database="postgres", user=DB_USER, password=DB_PASSWORD
         )
     except Exception as e:
         print("❌ Cannot connect to PostgreSQL!")
         print("Make sure PostgreSQL is running and accessible with:")
-        print("  - Host: localhost")
-        print("  - User: postgres")
-        print("  - Password: postgres")
+        print(f"  - Host: {DB_HOST}")
+        print(f"  - User: {DB_USER}")
+        print(f"  - Password: {DB_PASSWORD}")
         print(f"Error: {e}")
         sys.exit(1)
 

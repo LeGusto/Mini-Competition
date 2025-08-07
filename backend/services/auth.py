@@ -4,6 +4,7 @@ import bcrypt
 import os
 import jwt
 import datetime
+from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, JWT_SECRET, JWT_EXPIRATION
 
 
 class AuthService:
@@ -13,15 +14,16 @@ class AuthService:
 
     def __init__(self):
         self.conn = psycopg2.connect(
-            host="localhost",
-            database="mini_competition_db",
-            user="postgres",
-            password="postgres",
+            host=DB_HOST,
+            port=DB_PORT,
+            database=DB_NAME,
+            user=DB_USER,
+            password=DB_PASSWORD,
         )
         # Use RealDictCursor for dictionary-like access
         self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        self.JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key")
-        self.JWT_EXPIRATION = int(os.getenv("JWT_EXPIRATION", "3600"))
+        self.JWT_SECRET = JWT_SECRET
+        self.JWT_EXPIRATION = JWT_EXPIRATION
 
     def hash_password(self, password):
         """
