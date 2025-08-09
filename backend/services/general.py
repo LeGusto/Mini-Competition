@@ -1,3 +1,4 @@
+import os
 import requests
 from flask import Response
 
@@ -8,7 +9,9 @@ class GeneralService:
     """
 
     def __init__(self):
-        self.judge_base_url = "http://localhost:3000"
+        judge_host = os.getenv("JUDGE_HOST", "mini-judge")
+        judge_port = os.getenv("JUDGE_PORT", "3000")
+        self.judge_base_url = f"http://{judge_host}:{judge_port}"
 
     def get_problems(self):
         """
