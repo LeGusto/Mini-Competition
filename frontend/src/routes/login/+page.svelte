@@ -57,6 +57,8 @@
       <p class="error">{error}</p>
     {/if}
 
+    <div class="divider"></div>
+
     <h1>Register</h1>
     <form on:submit|preventDefault={handleRegister}>
         <input type="text" bind:value={registerUsername} placeholder="Username" required />
