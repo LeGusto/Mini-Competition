@@ -20,7 +20,7 @@
     const result = await authService.login({ username: loginUsername, password: loginPassword });
     
     if (result.success) {
-      await goto('/');
+      await goto('/main');
     } else {
       error = result.error || 'Login failed';
     }
@@ -35,7 +35,7 @@
     const result = await authService.register({ username: registerUsername, password: registerPassword });
     
     if (result.success) {
-      await goto('/');
+      await goto('/main');
     } else {
       error = result.error || 'Registration failed';
     }
@@ -45,8 +45,10 @@
 </script>
 
 <main>
+  <div class="container">
+    <div class="card">
     <h1>Login</h1>
-    <form on:submit|preventDefault={handleLogin}>
+    <form on:submit|preventDefault={handleLogin} class="login-form">
         <input type="text" bind:value={loginUsername} placeholder="Username" required />
         <input type="password" bind:value={loginPassword} placeholder="Password" required />
         <button type="submit" disabled={loading}>
@@ -56,18 +58,20 @@
     {#if error}
       <p class="error">{error}</p>
     {/if}
-
+    </div>
     <div class="divider"></div>
-
+    <div class="card">
     <h1>Register</h1>
-    <form on:submit|preventDefault={handleRegister}>
+    <form on:submit|preventDefault={handleRegister} class="register-form">
         <input type="text" bind:value={registerUsername} placeholder="Username" required />
         <input type="password" bind:value={registerPassword} placeholder="Password" required />
         <button type="submit" disabled={loading}>
           {loading ? 'Registering...' : 'Register'}
         </button>
     </form>
+    </div>
     {#if error}
       <p class="error">{error}</p>
     {/if}
+  </div>
 </main>
