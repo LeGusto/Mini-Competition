@@ -90,7 +90,6 @@
             <th>ID</th>
             <th>Time Limit</th>
             <th>Memory Limit</th>
-            <th>Test Cases</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -105,9 +104,6 @@
               </td>
               <td class="memory-limit">
                 {problem.memory_limit || 'N/A'}MB
-              </td>
-              <td class="test-cases">
-                {problem.tests || 'N/A'}
               </td>
               <td class="actions">
                 <button 
