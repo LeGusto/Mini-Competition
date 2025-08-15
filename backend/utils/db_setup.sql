@@ -49,3 +49,5 @@ CREATE TABLE IF NOT EXISTS contest_participants (
 -- Create index for better performance
 CREATE INDEX IF NOT EXISTS idx_submissions_user_id ON submissions(user_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_problem_id ON submissions(problem_id);
+
+INSERT INTO contests (name, description, start_time, end_time, problems) VALUES ('Contest 1', 'Description 1', '2025-01-01 00:00:00', '2025-01-01 00:00:00', '["1", "2", "3"]');

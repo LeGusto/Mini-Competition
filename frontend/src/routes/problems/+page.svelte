@@ -29,22 +29,8 @@
       }
       
       const data = await response.json();
+      // The /general/problems endpoint already includes metadata (time_limit, memory_limit, tests)
       problems = data.problems || [];
-      
-      // Load metadata for each problem
-      await Promise.all(problems.map(async (problem) => {
-        try {
-          const metadataResponse = await authService.authenticatedRequest(
-            `http://localhost:5000/general/problem/${problem.id}/metadata`
-          );
-          if (metadataResponse.ok) {
-            const metadata = await metadataResponse.json();
-            Object.assign(problem, metadata);
-          }
-        } catch (err) {
-          console.warn(`Failed to load metadata for problem ${problem.id}:`, err);
-        }
-      }));
       
     } catch (err) {
       error = err instanceof Error ? err.message : 'Failed to load problems';

@@ -5,7 +5,8 @@ from werkzeug.utils import secure_filename
 from models.solution import Solution
 import psycopg2
 import psycopg2.extras
-from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, JUDGE_BASE_URL
+from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+from services.connection import get_connection
 
 
 class SubmissionService:
@@ -14,16 +15,11 @@ class SubmissionService:
     """
 
     def __init__(self):
-        self.conn = psycopg2.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-        )
-        # Use RealDictCursor for dictionary-like access
+        self.conn = get_connection()
         self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        self.judge_base_url = JUDGE_BASE_URL
+        judge_host = os.getenv("JUDGE_HOST", "mini-judge")
+        judge_port = os.getenv("JUDGE_PORT", "3000")
+        self.judge_base_url = f"http://{judge_host}:{judge_port}"
         self.upload_folder = "tmp"
         os.makedirs(self.upload_folder, exist_ok=True)
 

@@ -9,7 +9,7 @@ import os
 import sys
 from pathlib import Path
 from services.auth import AuthService
-from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+from config import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
 
 
 def create_database():

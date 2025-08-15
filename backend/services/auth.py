@@ -4,7 +4,11 @@ import bcrypt
 import os
 import jwt
 import datetime
-from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, JWT_SECRET, JWT_EXPIRATION
+from config import (
+    JWT_SECRET,
+    JWT_EXPIRATION,
+)
+from services.connection import get_connection
 
 
 class AuthService:
@@ -13,13 +17,7 @@ class AuthService:
     """
 
     def __init__(self):
-        self.conn = psycopg2.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-        )
+        self.conn = get_connection()
         # Use RealDictCursor for dictionary-like access
         self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         self.JWT_SECRET = JWT_SECRET
