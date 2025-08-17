@@ -17,7 +17,9 @@ class GeneralService:
         """
         Get all available problems from the judge server
         """
+        print("get_problems===\n\n", flush=True)
         judge_url = f"{self.judge_base_url}/problems"
+        print("judge_url===\n\n", judge_url, flush=True)
 
         try:
             judge_response = requests.get(judge_url)
