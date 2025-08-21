@@ -77,7 +77,7 @@
   }
 
   function viewProblem(problemId: string) {
-    goto(`/problem?id=${problemId}`);
+    goto(`/contest/${contestId}/problem/${problemId}`);
   }
 
   function goBack() {

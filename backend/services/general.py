@@ -52,6 +52,32 @@ class GeneralService:
         except requests.RequestException as e:
             raise Exception(f"Failed to get problem statement: {e}")
 
+    def get_problem_metadata(self, problem_id):
+        """
+        Get metadata for a specific problem from the judge server
+        """
+        judge_url = f"{self.judge_base_url}/problem/{problem_id}/metadata"
+
+        try:
+            judge_response = requests.get(judge_url)
+            judge_response.raise_for_status()
+            return judge_response.json()
+        except requests.RequestException as e:
+            # If individual metadata endpoint doesn't exist, try to get it from the problems list
+            try:
+                problems_response = requests.get(f"{self.judge_base_url}/problems")
+                problems_response.raise_for_status()
+                problems_data = problems_response.json()
+
+                # Find the specific problem
+                for problem in problems_data.get("problems", []):
+                    if problem.get("id") == problem_id:
+                        return problem
+
+                raise Exception(f"Problem {problem_id} not found")
+            except requests.RequestException as fallback_error:
+                raise Exception(f"Failed to get problem metadata: {e}")
+
     def health_check(self):
         """
         Health check

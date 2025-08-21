@@ -40,6 +40,17 @@ def get_problem_statement(problem_id):
         return jsonify({"message": str(e)}), 500
 
 
+@general_bp.route("/general/problem/<problem_id>/metadata", methods=["GET"])
+@require_auth
+def get_problem_metadata(problem_id):
+    """Get metadata for a specific problem"""
+    try:
+        result = general_service.get_problem_metadata(problem_id)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
 @general_bp.route("/healthcheck", methods=["GET"])
 def healthcheck():
     try:
