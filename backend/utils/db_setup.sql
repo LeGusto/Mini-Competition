@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS submissions (
     submission_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status VARCHAR(50) DEFAULT 'pending',
     judge_response JSONB,
+    execution_time DECIMAL(10,3),
+    memory_used INTEGER,
     user_id INTEGER REFERENCES users(id)
 );
 
