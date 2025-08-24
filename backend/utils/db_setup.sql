@@ -48,8 +48,25 @@ CREATE TABLE IF NOT EXISTS contest_participants (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create index for better performance
+-- Create contest_submissions table for leaderboard functionality
+CREATE TABLE IF NOT EXISTS contest_submissions (
+    id SERIAL PRIMARY KEY,
+    contest_id INTEGER REFERENCES contests(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    problem_id VARCHAR(50) NOT NULL,
+    submission_id INTEGER REFERENCES submissions(id) ON DELETE CASCADE,
+    submission_time TIMESTAMP NOT NULL,
+    is_accepted BOOLEAN DEFAULT FALSE,
+    score INTEGER DEFAULT 0,
+    penalty_time INTEGER DEFAULT 0,  -- Time penalty for wrong submissions (in minutes)
+    contest_start_time TIMESTAMP NOT NULL,  -- Contest start for validation
+    contest_end_time TIMESTAMP NOT NULL,   -- Contest end for validation
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for performance
+CREATE INDEX idx_contest_submissions_contest_user ON contest_submissions(contest_id, user_id);
+CREATE INDEX idx_contest_submissions_contest_problem ON contest_submissions(contest_id, problem_id);
+CREATE INDEX idx_contest_submissions_time ON contest_submissions(submission_time);
 CREATE INDEX IF NOT EXISTS idx_submissions_user_id ON submissions(user_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_problem_id ON submissions(problem_id);
-
-INSERT INTO contests (name, description, start_time, end_time, problems) VALUES ('Contest 1', 'Description 1', '2025-01-01 00:00:00', '2025-01-01 00:00:00', '["1", "2", "3"]');

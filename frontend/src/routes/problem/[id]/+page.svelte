@@ -240,7 +240,7 @@
           <div class="problem-meta">
             <div class="meta-item">
               <span class="meta-label">Time Limit:</span>
-              <span class="meta-value">{problem.time_limit || 'N/A'}ms</span>
+              <span class="meta-value">{problem.time_limit || 'N/A'}s</span>
             </div>
             <div class="meta-item">
               <span class="meta-label">Memory Limit:</span>

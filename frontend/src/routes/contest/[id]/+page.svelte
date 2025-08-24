@@ -110,6 +110,12 @@
           <span class="contest-id">Contest #{contest.id}</span>
         </div>
       </div>
+
+      <div class="contest-actions">
+        <a href="/contest/{contestId}/leaderboard" class="btn btn-primary">
+          📊 Leaderboard
+        </a>
+      </div>
     </div>
 
     <div class="contest-details">
@@ -207,10 +213,20 @@
 
   .contest-header {
     margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .contest-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
   }
 
   .back-btn {
-    margin-bottom: 1rem;
+    flex-shrink: 0;
   }
 
   .contest-info h1 {

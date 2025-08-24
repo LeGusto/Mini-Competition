@@ -13,8 +13,12 @@
   let loading = false;
   let error = '';
   let availableProblems: any[] = [];
+  let userTimezone = '';
 
   onMount(async () => {
+    // Get user's timezone
+    userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    
     // Load available problems
     try {
       const response = await authService.authenticatedRequest('http://localhost:5000/general/problems');
@@ -122,6 +126,9 @@
           />
         </div>
       </div>
+      <div class="timezone-info">
+        <small>All times are in your local timezone: <strong>{userTimezone}</strong></small>
+      </div>
 
       <div class="form-row">
         <div class="form-group">
@@ -213,6 +220,24 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem;
+  }
+
+  .timezone-info {
+    text-align: center;
+    margin: 0.5rem 0 1rem 0;
+    padding: 0.5rem;
+    background: #2d2d2d;
+    border-radius: 4px;
+    border: 1px solid #444;
+  }
+
+  .timezone-info small {
+    color: #888;
+    font-family: 'Courier New', monospace;
+  }
+
+  .timezone-info strong {
+    color: #64b5f6;
   }
 
   label {

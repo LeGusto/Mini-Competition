@@ -14,7 +14,8 @@
   async function loadContests() {
     try {
       loading = true;
-      const response = await authService.authenticatedRequest('http://localhost:5000/contests');
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const response = await authService.authenticatedRequest(`http://localhost:5000/contests?timezone=${encodeURIComponent(userTimezone)}`);
       
       if (response.ok) {
         contests = await response.json();
@@ -29,15 +30,34 @@
     }
   }
 
-  function formatDateTime(isoString: string) {
-    const date = new Date(isoString);
+  function formatDateTime(timeData: any) {
+    if (!timeData) return 'N/A';
+    
+    // Handle new timezone-aware format
+    if (typeof timeData === 'object' && timeData.formatted) {
+      return `${timeData.formatted} ${timeData.timezone}`;
+    }
+    
+    // Fallback for old format
+    const date = new Date(timeData);
     return date.toLocaleString();
   }
 
-  function getContestStatus(startTime: string, endTime: string) {
+  function getContestStatus(startTime: any, endTime: any) {
     const now = new Date();
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+    
+    // Use UTC times for status calculation to avoid timezone issues
+    let start, end;
+    
+    if (typeof startTime === 'object' && startTime.utc_iso) {
+      // New timezone-aware format
+      start = new Date(startTime.utc_iso);
+      end = new Date(endTime.utc_iso);
+    } else {
+      // Fallback for old format
+      start = new Date(startTime);
+      end = new Date(endTime);
+    }
 
     if (now < start) return 'upcoming';
     if (now > end) return 'ended';
@@ -97,7 +117,7 @@
           <tr>
             <th>ID</th>
             <th>Name</th>
-            <th>Description</th>
+            <th>Solved</th>
             <th>Start Time</th>
             <th>End Time</th>
             <th>Problems</th>
@@ -111,8 +131,8 @@
             <tr>
               <td>{contest.id}</td>
               <td class="contest-name">{contest.name}</td>
-              <td class="contest-description">
-                {contest.description || 'No description'}
+              <td class="solved-count">
+                {contest.solved_problems || 0} / {contest.problems ? contest.problems.length : 0}
               </td>
               <td>{formatDateTime(contest.start_time)}</td>
               <td>{formatDateTime(contest.end_time)}</td>
@@ -223,11 +243,10 @@
     color: #fff;
   }
 
-  .contest-description {
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .solved-count {
+    text-align: center;
+    font-weight: 600;
+    color: #4caf50;
   }
 
   .problems-count {

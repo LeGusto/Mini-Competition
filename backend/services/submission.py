@@ -7,6 +7,7 @@ import psycopg2
 import psycopg2.extras
 from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
 from services.connection import get_connection
+from datetime import datetime
 
 
 class SubmissionService:
@@ -244,11 +245,6 @@ class SubmissionService:
                     problem_id,
                 ),
             )
-
-            print(f"Database update completed. Rows affected: {self.cursor.rowcount}")
-            print(
-                f"Stored execution_time: {execution_time}, memory_used: {memory_used}"
-            )
             self.conn.commit()
 
             if self.cursor.rowcount == 0:
@@ -264,3 +260,190 @@ class SubmissionService:
             print(f"Error updating submission result: {e}")
             self.conn.rollback()
             raise Exception(f"Failed to update submission result: {e}")
+
+    def get_database_timezone_info(self):
+        """Get database timezone information for debugging"""
+        try:
+            # Get current database time and timezone
+            self.cursor.execute("SELECT CURRENT_TIMESTAMP, CURRENT_TIME, NOW()")
+            result = self.cursor.fetchone()
+
+            # Get timezone setting
+            self.cursor.execute("SHOW timezone")
+            timezone_result = self.cursor.fetchone()
+
+            print(f"🌍 Database timezone info:")
+            print(f"   Current timestamp: {result[0]}")
+            print(f"   Current time: {result[1]}")
+            print(f"   NOW(): {result[2]}")
+            print(
+                f"   Timezone setting: {timezone_result[0] if timezone_result else 'Unknown'}"
+            )
+
+            return result
+        except Exception as e:
+            print(f"Error getting timezone info: {e}")
+            return None
+
+    def get_active_contest_for_problem(self, problem_id):
+        """Get the active contest that contains this problem"""
+        try:
+            # First, get timezone info for debugging
+            self.get_database_timezone_info()
+
+            # Debug: Let's see what's actually in the problems column
+            debug_query = """
+                SELECT id, name, problems, pg_typeof(problems) as problems_type
+                FROM contests 
+                LIMIT 3
+            """
+            self.cursor.execute(debug_query)
+            debug_results = self.cursor.fetchall()
+            print(f"🔍 Debug: Sample contests and their problems column:")
+            for debug_result in debug_results:
+                print(f"   Contest {debug_result['id']}: {debug_result['name']}")
+                print(
+                    f"   Problems: {debug_result['problems']} (type: {debug_result['problems_type']})"
+                )
+
+            # Try different approaches to handle the problems array
+            # First, try the simple approach
+            query = """
+                SELECT id, name, start_time, end_time, problems
+                FROM contests 
+                WHERE %s::text = ANY(problems)
+                AND start_time <= CURRENT_TIMESTAMP 
+                AND end_time >= CURRENT_TIMESTAMP
+                ORDER BY start_time DESC
+                LIMIT 1
+            """
+
+            self.cursor.execute(query, (problem_id,))
+            contest = self.cursor.fetchone()
+
+            if contest:
+                print(
+                    f"🎯 Found active contest for problem {problem_id}: {contest['name']} (ID: {contest['id']})"
+                )
+                print(
+                    f"   Contest time range: {contest['start_time']} to {contest['end_time']}"
+                )
+
+                # Check if contest is actually active
+                self.cursor.execute("SELECT CURRENT_TIMESTAMP")
+                current_time = self.cursor.fetchone()[0]
+                print(f"   Current database time: {current_time}")
+                print(
+                    f"   Start time check: {contest['start_time']} <= {current_time} = {contest['start_time'] <= current_time}"
+                )
+                print(
+                    f"   End time check: {contest['end_time']} >= {current_time} = {contest['end_time'] >= current_time}"
+                )
+            else:
+                print(f"ℹ️ No active contest found for problem {problem_id}")
+                # Debug: check what contests exist for this problem
+                debug_query = """
+                    SELECT id, name, start_time, end_time, problems,
+                           start_time <= CURRENT_TIMESTAMP as start_passed,
+                           end_time >= CURRENT_TIMESTAMP as end_not_reached
+                    FROM contests 
+                    WHERE %s::text = ANY(problems)
+                    ORDER BY start_time DESC
+                """
+                self.cursor.execute(debug_query, (problem_id,))
+                debug_contests = self.cursor.fetchall()
+                for debug_contest in debug_contests:
+                    print(
+                        f"🔍 Debug contest {debug_contest['id']}: {debug_contest['name']}"
+                    )
+                    print(
+                        f"   Start: {debug_contest['start_time']} (passed: {debug_contest['start_passed']})"
+                    )
+                    print(
+                        f"   End: {debug_contest['end_time']} (not reached: {debug_contest['end_not_reached']})"
+                    )
+
+            return contest
+        except Exception as e:
+            print(f"❌ Error getting active contest for problem {problem_id}: {e}")
+            # Rollback any failed transaction
+            try:
+                self.conn.rollback()
+            except:
+                pass
+            return None
+
+    def create_contest_submission(
+        self,
+        contest_id,
+        user_id,
+        problem_id,
+        submission_id,
+        submission_time,
+        is_accepted,
+        score=0,
+        penalty_time=0,
+    ):
+        """Create a contest submission entry"""
+        try:
+            # Get contest start and end times
+            query = """
+                SELECT start_time, end_time FROM contests WHERE id = %s
+            """
+            self.cursor.execute(query, (contest_id,))
+            contest = self.cursor.fetchone()
+
+            if not contest:
+                print(f"Contest {contest_id} not found")
+                return None
+
+            # Insert contest submission
+            insert_query = """
+                INSERT INTO contest_submissions 
+                (contest_id, user_id, problem_id, submission_id, submission_time, 
+                 is_accepted, score, penalty_time, contest_start_time, contest_end_time)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
+            """
+
+            self.cursor.execute(
+                insert_query,
+                (
+                    contest_id,
+                    user_id,
+                    problem_id,
+                    submission_id,
+                    submission_time,
+                    is_accepted,
+                    score,
+                    penalty_time,
+                    contest["start_time"],
+                    contest["end_time"],
+                ),
+            )
+
+            result = self.cursor.fetchone()
+            self.conn.commit()
+            print(f"Created contest submission: {result['id']}")
+            return result["id"]
+
+        except Exception as e:
+            self.conn.rollback()
+            print(f"Error creating contest submission: {e}")
+            return None
+
+    def get_submission_details(self, submission_id):
+        """Get submission details including user_id"""
+        try:
+            query = """
+                SELECT id, user_id, problem_id, language, submission_time, status
+                FROM submissions 
+                WHERE id = %s
+            """
+
+            self.cursor.execute(query, (submission_id,))
+            submission = self.cursor.fetchone()
+            return submission
+        except Exception as e:
+            print(f"Error getting submission details: {e}")
+            return None
