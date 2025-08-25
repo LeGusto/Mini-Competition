@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
+  import { authStore } from '$lib/stores/auth';
   import { onMount } from 'svelte';
 
   let contests: any[] = [];
@@ -14,7 +15,7 @@
   async function loadContests() {
     try {
       loading = true;
-      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const userTimezone = $authStore.user?.timezone || 'UTC';
       const response = await authService.authenticatedRequest(`http://localhost:5000/contests?timezone=${encodeURIComponent(userTimezone)}`);
       
       if (response.ok) {
@@ -37,10 +38,7 @@
     if (typeof timeData === 'object' && timeData.formatted) {
       return `${timeData.formatted} ${timeData.timezone}`;
     }
-    
-    // Fallback for old format
-    const date = new Date(timeData);
-    return date.toLocaleString();
+  
   }
 
   function getContestStatus(startTime: any, endTime: any) {

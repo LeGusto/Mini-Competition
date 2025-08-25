@@ -13,6 +13,8 @@
         if (!state.isAuthenticated) {
           // Redirect to login if not authenticated
           goto('/login');
+        } else {
+          goto('/main')
         }
       }
     });
@@ -21,11 +23,4 @@
     return unsubscribe;
   });
 </script>
-
-<main>
-  <h1>Welcome to Mini-Competition</h1>
-  <p>You are successfully logged in!</p>
-  <a href="/problem">View Problems</a>
-  <button on:click={() => authStore.logout()}>Logout</button>
-</main>
 

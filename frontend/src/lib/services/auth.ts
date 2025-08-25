@@ -25,12 +25,18 @@ class AuthService {
   // Login user
   async login(data: LoginData): Promise<AuthResponse> {
     try {
+      // Get user's timezone
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          ...data,
+          timezone: userTimezone
+        })
       });
 
       const result = await response.json();

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
+  import { authStore } from '$lib/stores/auth';
   import { onMount } from 'svelte';
 
   let name = '';
@@ -13,12 +14,8 @@
   let loading = false;
   let error = '';
   let availableProblems: any[] = [];
-  let userTimezone = '';
 
   onMount(async () => {
-    // Get user's timezone
-    userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    
     // Load available problems
     try {
       const response = await authService.authenticatedRequest('http://localhost:5000/general/problems');
@@ -126,9 +123,9 @@
           />
         </div>
       </div>
-      <div class="timezone-info">
-        <small>All times are in your local timezone: <strong>{userTimezone}</strong></small>
-      </div>
+              <div class="timezone-info">
+          <small>All times are in your local timezone: <strong>{$authStore.user?.timezone}</strong></small>
+        </div>
 
       <div class="form-row">
         <div class="form-group">

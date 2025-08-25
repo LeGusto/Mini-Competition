@@ -17,10 +17,6 @@ class ContestService:
         judge_host = os.getenv("JUDGE_HOST", "mini-judge")
         judge_port = os.getenv("JUDGE_PORT", "3000")
         self.judge_base_url = f"http://{judge_host}:{judge_port}"
-        # Default to UTC if no timezone specified, but you can change this
-        self.local_timezone = pytz.timezone(
-            "UTC"
-        )  # Change to your local timezone like 'America/New_York'
 
     def set_timezone(self, timezone_name):
         """Set the timezone for time conversions"""
