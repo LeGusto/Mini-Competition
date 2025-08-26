@@ -67,12 +67,6 @@
 
     function formatDate(dateString: string): string {
         if (!dateString) return 'N/A';
-        console.log(userTimezone);
-        const date = new Date(dateString);
-        console.log('Original dateString:', dateString);
-        console.log('Parsed Date object:', date);
-        console.log('Date UTC time:', date.toISOString());
-        console.log('User timezone:', userTimezone);
         return new Date(dateString).toLocaleString('en-US', {
             timeZone: userTimezone || undefined,
             year: 'numeric',
