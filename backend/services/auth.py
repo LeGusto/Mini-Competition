@@ -137,7 +137,7 @@ class AuthService:
         else:
             raise Exception("Invalid username or password")
 
-    def login_user(self, username, password):
+    def login_user(self, username, password, timezone):
         """
         Complete login flow - validates credentials and returns user data with token
         """
@@ -160,6 +160,7 @@ class AuthService:
                 "id": user["id"],
                 "username": user["username"],
                 "role": user["role"],
+                "timezone": timezone,
             },
         }
 

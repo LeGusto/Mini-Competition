@@ -19,9 +19,9 @@ def login():
     data = request.json
     username = data.get("username")
     password = data.get("password")
-
+    timezone = data.get("timezone")
     try:
-        result = auth_service.login_user(username, password)
+        result = auth_service.login_user(username, password, timezone)
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"message": str(e)}), 401

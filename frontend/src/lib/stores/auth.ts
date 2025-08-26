@@ -4,6 +4,7 @@ import { writable } from 'svelte/store';
 interface User {
   id: number;
   username: string;
+  timezone: string;
   email?: string;
   role?: string;
 }

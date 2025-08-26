@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { authService } from '$lib/services/auth';
-
+    import { authStore } from '$lib/stores/auth';
     interface Submission {
         id: number;
         problem_id: string;
@@ -17,8 +17,23 @@
     let submissions: Submission[] = [];
     let loading = true;
     let error: string | null = null;
+    let userTimezone: string | null = null;
 
     onMount(async () => {
+        authStore.init();
+        
+        const unsubscribe = authStore.subscribe(state => {
+            console.log("--------------------------------")
+            console.log(state.user?.timezone);
+            console.log(state.user);
+            console.log("--------------------------------")
+        if (state.user?.timezone) {
+            userTimezone = state.user.timezone;
+        }
+    });
+    
+    // Clean up subscription
+    unsubscribe();
         await fetchSubmissions();
     });
 
@@ -52,7 +67,21 @@
 
     function formatDate(dateString: string): string {
         if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleString();
+        console.log(userTimezone);
+        const date = new Date(dateString);
+        console.log('Original dateString:', dateString);
+        console.log('Parsed Date object:', date);
+        console.log('Date UTC time:', date.toISOString());
+        console.log('User timezone:', userTimezone);
+        return new Date(dateString).toLocaleString('en-US', {
+            timeZone: userTimezone || undefined,
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
     }
 
     function getStatusColor(submission: Submission): string {

@@ -27,6 +27,7 @@ class AuthService {
     try {
       // Get user's timezone
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      console.log(userTimezone);
       
       const response = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',

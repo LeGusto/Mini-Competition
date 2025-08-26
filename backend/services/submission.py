@@ -177,7 +177,7 @@ class SubmissionService:
                         "problem_id": submission["problem_id"],
                         "language": submission["language"],
                         "submission_time": (
-                            submission["submission_time"].isoformat()
+                            submission["submission_time"].isoformat() + "Z"
                             if submission["submission_time"]
                             else None
                         ),
