@@ -23,10 +23,6 @@
         authStore.init();
         
         const unsubscribe = authStore.subscribe(state => {
-            console.log("--------------------------------")
-            console.log(state.user?.timezone);
-            console.log(state.user);
-            console.log("--------------------------------")
         if (state.user?.timezone) {
             userTimezone = state.user.timezone;
         }
