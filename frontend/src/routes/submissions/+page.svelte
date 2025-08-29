@@ -241,36 +241,39 @@
 
     .submissions-header h1 {
         margin: 0;
-        color: #333;
+        color: #f5f5f5;
         font-size: 2rem;
+        font-weight: 500;
     }
 
     .submissions-refresh-btn {
-        background: #007bff;
-        color: white;
+        background: #666;
+        color: #f5f5f5;
         border: none;
         padding: 10px 20px;
         border-radius: 5px;
         cursor: pointer;
         font-size: 1rem;
+        font-family: 'Courier New', monospace;
     }
 
     .submissions-refresh-btn:hover:not(:disabled) {
-        background: #0056b3;
+        background: #777;
     }
 
     .submissions-refresh-btn:disabled {
-        background: #ccc;
+        background: #555;
         cursor: not-allowed;
     }
 
     .submissions-error-message {
-        background: #f8d7da;
-        color: #721c24;
+        background: #4a4a4a;
+        color: #ff6b6b;
         padding: 15px;
         border-radius: 5px;
         margin-bottom: 20px;
-        border: 1px solid #f5c6cb;
+        border: 1px solid #666;
+        font-family: 'Courier New', monospace;
     }
 
     .submissions-loading {
@@ -279,8 +282,8 @@
     }
 
     .submissions-spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #007bff;
+        border: 4px solid #666;
+        border-top: 4px solid #888;
         border-radius: 50%;
         width: 40px;
         height: 40px;
@@ -296,7 +299,8 @@
     .submissions-empty-state {
         text-align: center;
         padding: 60px 20px;
-        color: #666;
+        color: #aaa;
+        font-family: 'Courier New', monospace;
     }
 
     .submissions-empty-state p {
@@ -305,9 +309,9 @@
     }
 
     .submissions-table-container {
-        background: white;
+        background: #3a3a3a;
+        border: 1px solid #555;
         border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         overflow: hidden;
     }
 
@@ -316,39 +320,44 @@
         border-collapse: collapse;
     }
 
-    .submissions-table th, 
+    .submissions-table th,
     .submissions-table td {
         padding: 15px;
         text-align: left;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid #555;
+        color: #cccccc;
     }
 
     .submissions-table th {
-        background: #f8f9fa;
+        background: #4a4a4a;
         font-weight: 600;
-        color: #495057;
+        color: #f5f5f5;
     }
 
     .submissions-table tr:hover {
-        background: #f8f9fa;
+        background: #454545;
     }
 
     .submissions-problem-link {
-        color: #007bff;
+        color: #cccccc;
         text-decoration: none;
         font-weight: 500;
+        font-family: 'Courier New', monospace;
     }
 
     .submissions-problem-link:hover {
+        color: #f5f5f5;
         text-decoration: underline;
     }
 
     .submissions-language {
         font-family: 'Courier New', monospace;
-        background: #f8f9fa;
+        background: #4a4a4a;
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 0.9rem;
+        color: #f5f5f5;
+        border: 1px solid #666;
     }
 
     .submissions-status {
@@ -366,72 +375,78 @@
     }
 
     .submissions-status-accepted {
-        color: #059669;
-        background: #d1fae5;
+        color: #4caf50;
+        background: #3a3a3a;
+        border: 1px solid #4caf50;
         padding: 6px 10px;
     }
 
     .submissions-status-wrong {
-        color: #dc2626;
-        background: #fee2e2;
-        border: 1px solid #fecaca;
+        color: #ff6b6b;
+        background: #3a3a3a;
+        border: 1px solid #ff6b6b;
         padding: 6px 10px;
     }
 
     .submissions-status-tle {
-        color: #d97706;
-        background: #fef3c7;
-        border: 1px solid #fed7aa;
+        color: #ffb74d;
+        background: #3a3a3a;
+        border: 1px solid #ffb74d;
         padding: 6px 10px;
     }
 
     .submissions-status-error {
-        color: #dc2626;
-        background: #fee2e2;
-        border: 1px solid #fecaca;
+        color: #ff6b6b;
+        background: #3a3a3a;
+        border: 1px solid #ff6b6b;
         font-weight: 700;
         padding: 6px 10px;
     }
 
     .submissions-status-compilation {
-        color: #ea580c;
-        background: #fed7aa;
-        border: 1px solid #fdba74;
+        color: #ff8a65;
+        background: #3a3a3a;
+        border: 1px solid #ff8a65;
         padding: 6px 10px;
     }
 
     .submissions-status-pending {
-        color: #6b7280;
-        background: #f3f4f6;
+        color: #aaa;
+        background: #3a3a3a;
+        border: 1px solid #666;
         padding: 6px 10px;
     }
 
     .submissions-time, .submissions-memory {
         font-family: 'Courier New', monospace;
-        background: #f8f9fa;
+        background: #4a4a4a;
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 0.9rem;
         text-align: center;
+        color: #f5f5f5;
+        border: 1px solid #666;
     }
 
     .submissions-date {
-        color: #666;
+        color: #aaa;
         font-size: 0.9rem;
     }
 
     .submissions-details summary {
         cursor: pointer;
-        color: #007bff;
+        color: #cccccc;
         font-size: 0.9rem;
+        font-family: 'Courier New', monospace;
     }
 
     .submissions-details summary:hover {
+        color: #f5f5f5;
         text-decoration: underline;
     }
 
     .submissions-judge-response {
-        background: #f8f9fa;
+        background: #4a4a4a;
         padding: 10px;
         border-radius: 4px;
         font-size: 0.8rem;
@@ -439,10 +454,13 @@
         overflow-y: auto;
         margin-top: 10px;
         white-space: pre-wrap;
+        color: #f5f5f5;
+        border: 1px solid #666;
+        font-family: 'Courier New', monospace;
     }
 
     .submissions-no-details {
-        color: #999;
+        color: #888;
         font-style: italic;
         font-size: 0.9rem;
     }

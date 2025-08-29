@@ -187,26 +187,27 @@
   }
 
   .form-card {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #3a3a3a;
+    border: 1px solid #555;
     border-radius: 8px;
     padding: 2rem;
   }
 
   h1 {
     font-family: 'Courier New', monospace;
-    color: #64b5f6;
+    color: #f5f5f5;
     margin-bottom: 1.5rem;
     font-size: 1.8rem;
   }
 
   .error-message {
-    background: #f44336;
-    color: white;
+    background: #4a4a4a;
+    color: #ff6b6b;
     padding: 0.75rem;
     border-radius: 4px;
     margin-bottom: 1rem;
     font-family: 'Courier New', monospace;
+    border: 1px solid #666;
   }
 
   .form-group {
@@ -223,24 +224,24 @@
     text-align: center;
     margin: 0.5rem 0 1rem 0;
     padding: 0.5rem;
-    background: #2d2d2d;
+    background: #4a4a4a;
     border-radius: 4px;
-    border: 1px solid #444;
+    border: 1px solid #666;
   }
 
   .timezone-info small {
-    color: #888;
+    color: #aaa;
     font-family: 'Courier New', monospace;
   }
 
   .timezone-info strong {
-    color: #64b5f6;
+    color: #f5f5f5;
   }
 
   label {
     display: block;
     margin-bottom: 0.5rem;
-    color: #e0e0e0;
+    color: #cccccc;
     font-weight: 500;
     font-family: 'Courier New', monospace;
   }
@@ -248,24 +249,24 @@
   input, textarea {
     width: 100%;
     padding: 0.75rem;
-    background: #2d2d2d;
-    border: 1px solid #444;
+    background: #4a4a4a;
+    border: 1px solid #666;
     border-radius: 4px;
-    color: #e0e0e0;
+    color: #f5f5f5;
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
   }
 
   input:focus, textarea:focus {
     outline: none;
-    border-color: #64b5f6;
-    box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.2);
+    border-color: #888;
+    box-shadow: 0 0 0 2px rgba(136, 136, 136, 0.3);
   }
 
   .form-help {
     display: block;
     margin-top: 0.25rem;
-    color: #888;
+    color: #aaa;
     font-size: 0.8rem;
     font-family: 'Courier New', monospace;
   }
@@ -273,11 +274,12 @@
   .available-problems {
     margin-top: 0.5rem;
     padding: 0.5rem;
-    background: #2d2d2d;
+    background: #4a4a4a;
     border-radius: 4px;
     font-size: 0.85rem;
-    color: #ccc;
+    color: #cccccc;
     font-family: 'Courier New', monospace;
+    border: 1px solid #666;
   }
 
   .form-actions {
@@ -303,21 +305,21 @@
   }
 
   .btn-secondary {
-    background: #444;
-    color: #e0e0e0;
+    background: #666;
+    color: #f5f5f5;
   }
 
   .btn-secondary:hover:not(:disabled) {
-    background: #555;
+    background: #777;
   }
 
   .btn-primary {
-    background: #64b5f6;
-    color: #000;
+    background: #888;
+    color: #f5f5f5;
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: #42a5f5;
+    background: #999;
   }
 
   @media (max-width: 768px) {

@@ -217,8 +217,8 @@
   }
 
   .contest-header {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #3a3a3a;
+    border: 1px solid #555;
     border-radius: 8px;
     padding: 2rem;
     margin-bottom: 2rem;
@@ -226,9 +226,10 @@
 
   h1 {
     font-family: 'Courier New', monospace;
-    color: #64b5f6;
+    color: #f5f5f5;
     margin: 0 0 1rem 0;
     font-size: 2rem;
+    font-weight: 500;
   }
 
   .contest-info {
@@ -244,7 +245,7 @@
 
   .contest-times {
     font-family: 'Courier New', monospace;
-    color: #e0e0e0;
+    color: #cccccc;
   }
 
   .contest-times div {
@@ -254,7 +255,7 @@
   .contest-problems {
     text-align: center;
     font-family: 'Courier New', monospace;
-    color: #888;
+    color: #aaa;
     font-size: 1.1rem;
   }
 
@@ -267,18 +268,18 @@
   }
 
   .status-upcoming {
-    background: #2196f3;
-    color: white;
+    background: #666;
+    color: #f5f5f5;
   }
 
   .status-active {
-    background: #4caf50;
-    color: white;
+    background: #777;
+    color: #f5f5f5;
   }
 
   .status-ended {
-    background: #757575;
-    color: white;
+    background: #555;
+    color: #f5f5f5;
   }
 
   .leaderboard-content {
@@ -289,17 +290,18 @@
   }
 
   .leaderboard-table, .user-submissions {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #3a3a3a;
+    border: 1px solid #555;
     border-radius: 8px;
     padding: 1.5rem;
   }
 
   h2 {
     font-family: 'Courier New', monospace;
-    color: #64b5f6;
+    color: #f5f5f5;
     margin: 0 0 1rem 0;
     font-size: 1.5rem;
+    font-weight: 500;
   }
 
   table {
@@ -311,17 +313,17 @@
   th, td {
     padding: 0.75rem;
     text-align: left;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #555;
   }
 
   th {
-    background: #2d2d2d;
-    color: #64b5f6;
+    background: #4a4a4a;
+    color: #f5f5f5;
     font-weight: 600;
   }
 
   td {
-    color: #e0e0e0;
+    color: #cccccc;
   }
 
   .rank-gold {
@@ -346,7 +348,7 @@
 
   .username {
     font-weight: 600;
-    color: #fff;
+    color: #f5f5f5;
   }
 
   .solved, .score {
@@ -371,8 +373,8 @@
   }
 
   .submission-item {
-    background: #2d2d2d;
-    border: 1px solid #444;
+    background: #4a4a4a;
+    border: 1px solid #666;
     border-radius: 4px;
     padding: 1rem;
   }
@@ -394,7 +396,7 @@
 
   .problem-id {
     font-weight: 600;
-    color: #64b5f6;
+    color: #f5f5f5;
   }
 
   .submission-status {
@@ -406,23 +408,23 @@
   }
 
   .submission-status:global(.rejected) {
-    color: #f44336;
+    color: #ff6b6b;
   }
 
   .submission-time {
     font-size: 0.9rem;
-    color: #888;
+    color: #aaa;
   }
 
   .submission-details {
     display: flex;
     gap: 1rem;
     font-size: 0.9rem;
-    color: #ccc;
+    color: #cccccc;
   }
 
   .language {
-    color: #64b5f6;
+    color: #f5f5f5;
   }
 
   .score {
@@ -435,7 +437,7 @@
 
   .no-submissions {
     text-align: center;
-    color: #888;
+    color: #aaa;
     font-style: italic;
     padding: 2rem;
   }
@@ -443,8 +445,8 @@
   .refresh-info {
     text-align: center;
     padding: 1rem;
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #3a3a3a;
+    border: 1px solid #555;
     border-radius: 8px;
     display: flex;
     justify-content: space-between;
@@ -452,7 +454,7 @@
   }
 
   .refresh-info small {
-    color: #888;
+    color: #aaa;
     font-family: 'Courier New', monospace;
   }
 
@@ -467,29 +469,30 @@
   }
 
   .btn-secondary {
-    background: #444;
-    color: #e0e0e0;
+    background: #666;
+    color: #f5f5f5;
   }
 
   .btn-secondary:hover {
-    background: #555;
+    background: #777;
   }
 
   .loading {
     text-align: center;
     padding: 3rem;
-    color: #888;
+    color: #aaa;
     font-family: 'Courier New', monospace;
     font-size: 1.2rem;
   }
 
   .error-message {
-    background: #f44336;
-    color: white;
+    background: #4a4a4a;
+    color: #ff6b6b;
     padding: 1rem;
     border-radius: 4px;
     margin-bottom: 1rem;
     font-family: 'Courier New', monospace;
+    border: 1px solid #666;
   }
 
   @media (max-width: 768px) {

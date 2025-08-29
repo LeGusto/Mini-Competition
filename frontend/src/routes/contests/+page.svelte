@@ -174,31 +174,33 @@
 
   h1 {
     font-family: 'Courier New', monospace;
-    color: #64b5f6;
+    color: #f5f5f5;
     margin: 0;
     font-size: 2rem;
+    font-weight: 500;
   }
 
   .loading {
     text-align: center;
     padding: 2rem;
-    color: #888;
+    color: #aaa;
     font-family: 'Courier New', monospace;
   }
 
   .error-message {
-    background: #f44336;
-    color: white;
+    background: #4a4a4a;
+    color: #ff6b6b;
     padding: 1rem;
     border-radius: 4px;
     margin-bottom: 1rem;
     font-family: 'Courier New', monospace;
+    border: 1px solid #666;
   }
 
   .empty-state {
     text-align: center;
     padding: 3rem;
-    color: #888;
+    color: #aaa;
     font-family: 'Courier New', monospace;
   }
 
@@ -208,8 +210,8 @@
   }
 
   .contests-table {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #3a3a3a;
+    border: 1px solid #555;
     border-radius: 8px;
     overflow: hidden;
   }
@@ -223,22 +225,22 @@
   th, td {
     padding: 1rem;
     text-align: left;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #555;
   }
 
   th {
-    background: #2d2d2d;
-    color: #64b5f6;
+    background: #4a4a4a;
+    color: #f5f5f5;
     font-weight: 600;
   }
 
   td {
-    color: #e0e0e0;
+    color: #cccccc;
   }
 
   .contest-name {
     font-weight: 600;
-    color: #fff;
+    color: #f5f5f5;
   }
 
   .solved-count {
@@ -248,7 +250,7 @@
   }
 
   .problems-count {
-    color: #888;
+    color: #aaa;
     font-size: 0.9rem;
   }
 
@@ -261,18 +263,18 @@
   }
 
   .status-upcoming {
-    background: #2196f3;
-    color: white;
+    background: #666;
+    color: #f5f5f5;
   }
 
   .status-active {
-    background: #4caf50;
-    color: white;
+    background: #777;
+    color: #f5f5f5;
   }
 
   .status-ended {
-    background: #757575;
-    color: white;
+    background: #555;
+    color: #f5f5f5;
   }
 
   .btn {
@@ -293,21 +295,21 @@
   }
 
   .btn-primary {
-    background: #64b5f6;
-    color: #000;
+    background: #888;
+    color: #f5f5f5;
   }
 
   .btn-primary:hover {
-    background: #42a5f5;
+    background: #999;
   }
 
   .btn-secondary {
-    background: #444;
-    color: #e0e0e0;
+    background: #666;
+    color: #f5f5f5;
   }
 
   .btn-secondary:hover {
-    background: #555;
+    background: #777;
   }
 
   @media (max-width: 768px) {

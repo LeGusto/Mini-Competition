@@ -121,14 +121,14 @@
 
   .header h1 {
     font-size: 2.5rem;
-    font-weight: 700;
-    color: #0f172a;
+    font-weight: 500;
+    color: #f5f5f5;
     margin-bottom: 0.5rem;
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
   }
 
   .header p {
-    color: #64748b;
+    color: #cccccc;
     font-size: 1.125rem;
   }
 
@@ -140,8 +140,8 @@
   .spinner {
     width: 40px;
     height: 40px;
-    border: 4px solid #e2e8f0;
-    border-top: 4px solid #3b82f6;
+    border: 4px solid #666;
+    border-top: 4px solid #888;
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;
@@ -153,13 +153,13 @@
   }
 
   .error {
-    color: #dc2626;
+    color: #ff6b6b;
   }
 
   .error button {
     margin-top: 1rem;
-    background: #dc2626;
-    color: white;
+    background: #666;
+    color: #f5f5f5;
     border: none;
     padding: 0.75rem 1.5rem;
     border-radius: 6px;
@@ -168,13 +168,13 @@
   }
 
   .error button:hover {
-    background: #b91c1c;
+    background: #777;
   }
 
   .table-container {
-    background: white;
+    background: #3a3a3a;
+    border: 1px solid #555;
     border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     overflow: hidden;
   }
 
@@ -185,12 +185,12 @@
   }
 
   .problems-table th {
-    background: #f8fafc;
-    color: #374151;
+    background: #4a4a4a;
+    color: #f5f5f5;
     font-weight: 600;
     text-align: left;
     padding: 1rem 1.5rem;
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 2px solid #666;
     font-size: 0.875rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -198,12 +198,13 @@
 
   .problems-table td {
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid #555;
     vertical-align: middle;
+    color: #cccccc;
   }
 
   .problem-row:hover {
-    background: #f8fafc;
+    background: #454545;
   }
 
   .problem-id {
@@ -211,8 +212,8 @@
   }
 
   .id-badge {
-    background: #3b82f6;
-    color: white;
+    background: #666;
+    color: #f5f5f5;
     padding: 0.25rem 0.75rem;
     border-radius: 20px;
     font-size: 0.875rem;
@@ -220,7 +221,7 @@
   }
 
   .time-limit, .memory-limit, .test-cases {
-    color: #6b7280;
+    color: #aaa;
     font-weight: 500;
   }
 
@@ -229,8 +230,8 @@
   }
 
   .view-btn {
-    background: #1e40af;
-    color: white;
+    background: #666;
+    color: #f5f5f5;
     border: none;
     padding: 0.5rem 1rem;
     border-radius: 6px;
@@ -242,9 +243,8 @@
   }
 
   .view-btn:hover {
-    background: #1d4ed8;
+    background: #777;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.3);
   }
 
   .view-btn:active {

@@ -97,10 +97,18 @@
     {@const status = getContestStatus(contest.start_time, contest.end_time)}
     
     <div class="contest-header">
-      <button class="btn btn-secondary back-btn" on:click={goBack}>
-        ← Back to Contests
-      </button>
-      
+      <div class="contest-header-top">
+        <button class="btn btn-secondary back-btn" on:click={goBack}>
+          ← Back to Contests
+        </button>
+
+        <div class="contest-actions">
+          <a href="/contest/{contestId}/leaderboard" class="btn btn-primary">
+            📊 Leaderboard
+          </a>
+        </div>
+      </div>
+
       <div class="contest-info">
         <h1>{contest.name}</h1>
         <div class="contest-meta">
@@ -109,12 +117,6 @@
           </span>
           <span class="contest-id">Contest #{contest.id}</span>
         </div>
-      </div>
-
-      <div class="contest-actions">
-        <a href="/contest/{contestId}/leaderboard" class="btn btn-primary">
-          📊 Leaderboard
-        </a>
       </div>
     </div>
 
@@ -198,24 +200,31 @@
   .loading {
     text-align: center;
     padding: 2rem;
-    color: #888;
+    color: #aaa;
     font-family: 'Courier New', monospace;
   }
 
   .error-message {
-    background: #f44336;
-    color: white;
+    background: #4a4a4a;
+    color: #ff6b6b;
     padding: 1rem;
     border-radius: 4px;
     margin-bottom: 1rem;
     font-family: 'Courier New', monospace;
+    border: 1px solid #666;
   }
 
   .contest-header {
     margin-bottom: 2rem;
     display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .contest-header-top {
+    display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
     gap: 1rem;
   }
 
@@ -231,9 +240,10 @@
 
   .contest-info h1 {
     font-family: 'Courier New', monospace;
-    color: #64b5f6;
+    color: #f5f5f5;
     margin: 0 0 0.5rem 0;
     font-size: 2.2rem;
+    font-weight: 500;
   }
 
   .contest-meta {
@@ -243,7 +253,7 @@
   }
 
   .contest-id {
-    color: #888;
+    color: #aaa;
     font-family: 'Courier New', monospace;
   }
 
@@ -257,18 +267,18 @@
   }
 
   .status-upcoming {
-    background: #2196f3;
-    color: white;
+    background: #666;
+    color: #f5f5f5;
   }
 
   .status-active {
-    background: #4caf50;
-    color: white;
+    background: #777;
+    color: #f5f5f5;
   }
 
   .status-ended {
-    background: #757575;
-    color: white;
+    background: #555;
+    color: #f5f5f5;
   }
 
   .contest-details {
@@ -278,17 +288,18 @@
   }
 
   .detail-card, .problems-card {
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #3a3a3a;
+    border: 1px solid #555;
     border-radius: 8px;
     padding: 1.5rem;
   }
 
   .detail-card h2, .problems-card h2 {
     font-family: 'Courier New', monospace;
-    color: #64b5f6;
+    color: #f5f5f5;
     margin: 0 0 1rem 0;
     font-size: 1.4rem;
+    font-weight: 500;
   }
 
   .detail-grid {
@@ -304,14 +315,14 @@
   }
 
   .detail-label {
-    color: #888;
+    color: #aaa;
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
     font-weight: 600;
   }
 
   .detail-item span {
-    color: #e0e0e0;
+    color: #cccccc;
     font-family: 'Courier New', monospace;
   }
 
@@ -328,31 +339,28 @@
   th, td {
     padding: 0.75rem;
     text-align: left;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #555;
+    color: #cccccc;
   }
 
   th {
-    background: #2d2d2d;
-    color: #64b5f6;
+    background: #4a4a4a;
+    color: #f5f5f5;
     font-weight: 600;
-  }
-
-  td {
-    color: #e0e0e0;
   }
 
   .problem-id {
     font-weight: 600;
-    color: #fff;
+    color: #f5f5f5;
   }
 
   .empty-problems {
     text-align: center;
     padding: 2rem;
-    color: #888;
+    color: #aaa;
     font-family: 'Courier New', monospace;
-    background: #1a1a1a;
-    border: 1px solid #333;
+    background: #3a3a3a;
+    border: 1px solid #555;
     border-radius: 8px;
   }
 
@@ -374,21 +382,21 @@
   }
 
   .btn-primary {
-    background: #64b5f6;
-    color: #000;
+    background: #888;
+    color: #f5f5f5;
   }
 
   .btn-primary:hover {
-    background: #42a5f5;
+    background: #999;
   }
 
   .btn-secondary {
-    background: #444;
-    color: #e0e0e0;
+    background: #666;
+    color: #f5f5f5;
   }
 
   .btn-secondary:hover {
-    background: #555;
+    background: #777;
   }
 
   @media (max-width: 768px) {
@@ -399,6 +407,16 @@
     .contest-meta {
       flex-direction: column;
       align-items: flex-start;
+    }
+
+    .contest-header-top {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .contest-info h1 {
+      font-size: 1.8rem;
     }
   }
 </style>
