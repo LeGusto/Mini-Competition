@@ -140,6 +140,78 @@ class ContestService {
       throw error;
     }
   }
+
+  // Register for a contest
+  async registerForContest(contestId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await authService.authenticatedRequest(
+        `${API_BASE}/contest/${contestId}/register`,
+        {
+          method: 'POST'
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        return { success: true, message: data.message };
+      } else {
+        return { success: false, message: data.message || 'Registration failed' };
+      }
+    } catch (error) {
+      console.error('Error registering for contest:', error);
+      return { success: false, message: 'Failed to register for contest' };
+    }
+  }
+
+  // Check registration status for a contest
+  async checkRegistrationStatus(contestId: string): Promise<{
+    is_registered: boolean;
+    registration_data?: any;
+  }> {
+    try {
+      const response = await authService.authenticatedRequest(
+        `${API_BASE}/contest/${contestId}/registration-status`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          is_registered: data.is_registered,
+          registration_data: data.registration_data
+        };
+      } else {
+        return { is_registered: false };
+      }
+    } catch (error) {
+      console.error('Error checking registration status:', error);
+      return { is_registered: false };
+    }
+  }
+
+  // Get contest access status
+  async getContestAccessStatus(contestId: string): Promise<{
+    can_access: boolean;
+    reason: string;
+    can_register: boolean;
+    contest_status: string;
+    is_registered: boolean;
+  }> {
+    try {
+      const response = await authService.authenticatedRequest(
+        `${API_BASE}/contest/${contestId}/access`
+      );
+
+      if (response.ok) {
+        return await response.json();
+      } else {
+        throw new Error('Failed to get access status');
+      }
+    } catch (error) {
+      console.error('Error getting contest access status:', error);
+      throw error;
+    }
+  }
 }
 
 export const contestService = new ContestService();

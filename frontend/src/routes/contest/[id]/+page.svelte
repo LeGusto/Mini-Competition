@@ -2,12 +2,18 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
+  import { contestService } from '$lib/services/contest';
   import { onMount } from 'svelte';
 
   let contest: any = null;
   let problems: any[] = [];
   let loading = true;
   let error = '';
+  let isRegistered = false;
+  let accessStatus: any = null;
+  let registering = false;
+  let registrationMessage = '';
+  let registrationData: any = null;
 
   $: contestId = $page.params.id;
 
@@ -20,21 +26,99 @@
   async function loadContest() {
     try {
       loading = true;
-      const response = await authService.authenticatedRequest(`http://localhost:5000/contest/${contestId}`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        problems = data.problems || [];
-        
-        // Also get contest details
+
+      // Check access status first
+      try {
+        accessStatus = await contestService.getContestAccessStatus(contestId);
+        isRegistered = accessStatus.is_registered;
+
+        // Get registration data if user is registered
+        if (isRegistered) {
+          const regStatus = await contestService.checkRegistrationStatus(contestId);
+          registrationData = regStatus.registration_data;
+        }
+      } catch (err) {
+        console.error('Error checking access status:', err);
+        accessStatus = { can_access: false, reason: 'Unable to check access status' };
+      }
+
+      // Determine what to load based on access status
+      if (accessStatus?.can_access) {
+        // User has full access - load complete contest details
         const contestsResponse = await authService.authenticatedRequest('http://localhost:5000/contests');
         if (contestsResponse.ok) {
           const contests = await contestsResponse.json();
           contest = contests.find((c: any) => c.id.toString() === contestId);
+
+          if (!contest) {
+            error = 'Contest not found';
+            return;
+          }
+        } else {
+          error = 'Failed to load contest details';
+          return;
+        }
+      } else if (accessStatus && accessStatus.can_register) {
+        // User can register - load basic contest info for registration
+        const contestsResponse = await authService.authenticatedRequest('http://localhost:5000/contests');
+        if (contestsResponse.ok) {
+          const contests = await contestsResponse.json();
+          contest = contests.find((c: any) => c.id.toString() === contestId);
+
+          if (!contest) {
+            error = 'Contest not found';
+            return;
+          }
+        } else {
+          error = 'Failed to load contest details';
+          return;
+        }
+      } else if (accessStatus?.is_registered && accessStatus?.contest_status === 'upcoming') {
+        // User is registered for upcoming contest - load basic info but don't show details
+        const contestsResponse = await authService.authenticatedRequest('http://localhost:5000/contests');
+        if (contestsResponse.ok) {
+          const contests = await contestsResponse.json();
+          const fullContest = contests.find((c: any) => c.id.toString() === contestId);
+
+          if (!fullContest) {
+            error = 'Contest not found';
+            return;
+          }
+
+          // Show basic info but hide sensitive details
+          contest = {
+            id: fullContest.id,
+            name: fullContest.name,
+            description: 'You are registered for this contest. Details will be available when the contest starts.',
+            start_time: fullContest.start_time,
+            end_time: fullContest.end_time,
+            problems: []
+          };
+        } else {
+          error = 'Failed to load contest details';
+          return;
         }
       } else {
-        error = 'Failed to load contest';
+        // User can't access and can't register
+        contest = {
+          id: parseInt(contestId),
+          name: 'Contest',
+          description: 'Access restricted',
+          start_time: null,
+          end_time: null,
+          problems: []
+        };
       }
+
+      // Load problems only if user has access
+      if (accessStatus?.can_access) {
+        const response = await authService.authenticatedRequest(`http://localhost:5000/contest/${contestId}`);
+        if (response.ok) {
+          const data = await response.json();
+          problems = data.problems || [];
+        }
+      }
+
     } catch (err) {
       error = 'Failed to load contest';
       console.error('Error loading contest:', err);
@@ -83,6 +167,28 @@
   function goBack() {
     goto('/contests');
   }
+
+  async function registerForContest() {
+    try {
+      registering = true;
+      registrationMessage = '';
+
+      const result = await contestService.registerForContest(contestId);
+
+      if (result.success) {
+        registrationMessage = result.message;
+        // Reload contest to update access status
+        await loadContest();
+      } else {
+        registrationMessage = result.message;
+      }
+    } catch (err) {
+      registrationMessage = 'Registration failed';
+      console.error('Error registering for contest:', err);
+    } finally {
+      registering = false;
+    }
+  }
 </script>
 
 <div class="contest-container">
@@ -121,6 +227,51 @@
     </div>
 
     <div class="contest-details">
+      <!-- Access Control Section -->
+      {#if accessStatus && !accessStatus.can_access}
+        {#if accessStatus.is_registered && accessStatus.contest_status === 'upcoming'}
+          <!-- User is registered for upcoming contest -->
+          <div class="access-control-card registered-card">
+            <h2>Registration Confirmed</h2>
+            <div class="access-message">
+              <p>✅ You are registered for this contest!</p>
+              <p>The contest details and problems will be available when the contest starts.</p>
+              {#if registrationData}
+                <p class="registration-time">Registered on: {formatDateTime(registrationData.registered_at)}</p>
+              {/if}
+            </div>
+          </div>
+        {:else if !accessStatus.is_registered && accessStatus.can_register}
+          <!-- User can register -->
+          <div class="access-control-card">
+            <h2>Registration Required</h2>
+            <div class="access-message">
+              <p>To participate in this contest, you need to register first.</p>
+              <button
+                class="btn btn-primary register-btn"
+                on:click={registerForContest}
+                disabled={registering}
+              >
+                {registering ? 'Registering...' : 'Register for Contest'}
+              </button>
+              {#if registrationMessage}
+                <div class="registration-result {registrationMessage.includes('success') ? 'success' : 'error'}">
+                  {registrationMessage}
+                </div>
+              {/if}
+            </div>
+          </div>
+        {:else}
+          <!-- User can't register (contest ended or other restriction) -->
+          <div class="access-control-card restricted-card">
+            <h2>Access Restricted</h2>
+            <div class="access-message">
+              <p>{accessStatus.reason}</p>
+            </div>
+          </div>
+        {/if}
+      {/if}
+
       <div class="detail-card">
         <h2>Contest Information</h2>
         <div class="detail-grid">
@@ -140,10 +291,16 @@
             <div class="detail-label">Problems:</div>
             <span>{contest.problems ? contest.problems.length : 0} problems</span>
           </div>
+          {#if registrationData}
+            <div class="detail-item">
+              <div class="detail-label">Registered:</div>
+              <span>{formatDateTime(registrationData.registered_at)}</span>
+            </div>
+          {/if}
         </div>
       </div>
 
-      {#if problems.length > 0}
+      {#if accessStatus?.can_access && problems.length > 0}
         <div class="problems-card">
           <h2>Problems</h2>
           <div class="problems-table">
@@ -163,8 +320,8 @@
                     <td>{problem.time_limit}ms</td>
                     <td>{problem.memory_limit}MB</td>
                     <td>
-                      <button 
-                        class="btn btn-small btn-primary" 
+                      <button
+                        class="btn btn-small btn-primary"
                         on:click={() => viewProblem(problem.id)}
                       >
                         View Problem
@@ -176,7 +333,7 @@
             </table>
           </div>
         </div>
-      {:else}
+      {:else if accessStatus?.can_access}
         <div class="empty-problems">
           <p>No problems assigned to this contest yet.</p>
         </div>
@@ -257,6 +414,26 @@
     font-family: 'Courier New', monospace;
   }
 
+  .registration-status {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+  }
+
+  .registration-status.registered {
+    color: #4caf50;
+    background: #3a3a3a;
+    border: 1px solid #4caf50;
+  }
+
+  .registration-status.not-registered {
+    color: #ff6b6b;
+    background: #3a3a3a;
+    border: 1px solid #ff6b6b;
+  }
+
   .status-badge {
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -287,14 +464,14 @@
     gap: 2rem;
   }
 
-  .detail-card, .problems-card {
+  .detail-card, .problems-card, .access-control-card {
     background: #3a3a3a;
     border: 1px solid #555;
     border-radius: 8px;
     padding: 1.5rem;
   }
 
-  .detail-card h2, .problems-card h2 {
+  .detail-card h2, .problems-card h2, .access-control-card h2 {
     font-family: 'Courier New', monospace;
     color: #f5f5f5;
     margin: 0 0 1rem 0;
@@ -324,6 +501,59 @@
   .detail-item span {
     color: #cccccc;
     font-family: 'Courier New', monospace;
+  }
+
+  .access-message {
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .access-message p {
+    color: #cccccc;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .registration-time {
+    color: #aaa !important;
+    font-size: 0.9rem !important;
+    margin-top: 0.5rem !important;
+    font-style: italic;
+  }
+
+  .registered-card .access-message p:first-child {
+    color: #4caf50;
+    font-weight: 500;
+  }
+
+  .restricted-card .access-message p {
+    color: #ff6b6b;
+  }
+
+  .register-btn {
+    margin-top: 0.5rem;
+  }
+
+  .registration-result {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    text-align: center;
+  }
+
+  .registration-result.success {
+    background: #3a3a3a;
+    color: #4caf50;
+    border: 1px solid #4caf50;
+  }
+
+  .registration-result.error {
+    background: #3a3a3a;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
   }
 
   .problems-table {

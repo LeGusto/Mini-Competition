@@ -309,7 +309,7 @@ class ContestService:
 
             cursor.execute(
                 """
-                SELECT 
+                SELECT
                     cs.id,
                     cs.problem_id,
                     cs.submission_time,
@@ -346,6 +346,177 @@ class ContestService:
                 )
 
             return result
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    def check_user_registration(self, contest_id, user_id):
+        """Check if a user is registered for a contest"""
+        conn = get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        try:
+            cursor.execute(
+                """
+                SELECT id FROM contest_participants
+                WHERE contest_id = %s AND user_id = %s
+            """,
+                (contest_id, user_id),
+            )
+
+            result = cursor.fetchone()
+            return result is not None
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    def get_user_registration_data(self, contest_id, user_id):
+        """Get detailed registration data for a user in a contest"""
+        conn = get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        try:
+            cursor.execute(
+                """
+                SELECT
+                    cp.id,
+                    cp.created_at as registered_at,
+                    cp.updated_at,
+                    u.username,
+                    c.name as contest_name
+                FROM contest_participants cp
+                JOIN users u ON cp.user_id = u.id
+                JOIN contests c ON cp.contest_id = c.id
+                WHERE cp.contest_id = %s AND cp.user_id = %s
+            """,
+                (contest_id, user_id),
+            )
+
+            result = cursor.fetchone()
+            if result:
+                return {
+                    "registration_id": result["id"],
+                    "registered_at": self.convert_to_local_time(
+                        result["registered_at"]
+                    ),
+                    "username": result["username"],
+                    "contest_name": result["contest_name"],
+                }
+            return None
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    def register_for_contest(self, contest_id, user_id):
+        """Register a user for a contest"""
+        conn = get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        try:
+            # Check if user is already registered
+            if self.check_user_registration(contest_id, user_id):
+                return {
+                    "success": False,
+                    "message": "User is already registered for this contest",
+                }
+
+            # Check if contest exists
+            cursor.execute("SELECT id FROM contests WHERE id = %s", (contest_id,))
+            contest = cursor.fetchone()
+            if not contest:
+                return {"success": False, "message": "Contest not found"}
+
+            # Register the user
+            cursor.execute(
+                """
+                INSERT INTO contest_participants (contest_id, user_id)
+                VALUES (%s, %s)
+                RETURNING id
+            """,
+                (contest_id, user_id),
+            )
+
+            conn.commit()
+            return {"success": True, "message": "Successfully registered for contest"}
+
+        except Exception as e:
+            conn.rollback()
+            return {"success": False, "message": f"Registration failed: {str(e)}"}
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    def get_contest_access_status(self, contest_id, user_id):
+        """Get access status for a user to view contest problems"""
+        conn = get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        try:
+            # Get contest info
+            cursor.execute(
+                """
+                SELECT id, start_time, end_time
+                FROM contests WHERE id = %s
+            """,
+                (contest_id,),
+            )
+
+            contest = cursor.fetchone()
+            if not contest:
+                return {"can_access": False, "reason": "Contest not found"}
+
+            # Check if user is registered
+            is_registered = self.check_user_registration(contest_id, user_id)
+
+            # Determine contest status
+            now = datetime.now(timezone.utc)
+            start_time = contest["start_time"]
+            end_time = contest["end_time"]
+
+            if now < start_time:
+                contest_status = "upcoming"
+            elif now > end_time:
+                contest_status = "ended"
+            else:
+                contest_status = "active"
+
+            # Determine access rights
+            if contest_status == "ended":
+                # Ended contests are viewable by everyone
+                return {
+                    "can_access": True,
+                    "reason": "Contest has ended - you can view all problems",
+                    "contest_status": contest_status,
+                    "is_registered": is_registered,
+                }
+            elif not is_registered:
+                return {
+                    "can_access": False,
+                    "reason": "You must register for this contest to view problems",
+                    "can_register": contest_status != "ended",
+                    "contest_status": contest_status,
+                    "is_registered": False,
+                }
+
+            # User is registered
+            if contest_status == "active":
+                return {
+                    "can_access": True,
+                    "reason": "Contest is active - you can view and solve problems",
+                    "contest_status": contest_status,
+                    "is_registered": True,
+                }
+            else:  # upcoming
+                return {
+                    "can_access": False,
+                    "reason": "Contest hasn't started yet. You can view problems once it begins.",
+                    "contest_status": contest_status,
+                    "is_registered": True,
+                }
 
         finally:
             cursor.close()

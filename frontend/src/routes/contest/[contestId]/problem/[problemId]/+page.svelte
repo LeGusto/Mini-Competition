@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
+  import { contestService } from '$lib/services/contest';
   import { onMount } from 'svelte';
 
   let contest: any = null;
@@ -9,7 +10,8 @@
   let pdfUrl: string | null = null;
   let loading = true;
   let error = '';
-  
+  let accessStatus: any = null;
+
   // Submission form state
   let selectedFile: File | null = null;
   let selectedLanguage = 'cpp';
@@ -33,22 +35,62 @@
       loading = true;
       error = '';
 
-      // Load contest details
-      const contestsResponse = await authService.authenticatedRequest('http://localhost:5000/contests');
-      if (contestsResponse.ok) {
-        const contests = await contestsResponse.json();
-        contest = contests.find((c: any) => c.id.toString() === contestId);
-        
-        if (!contest) {
-          error = 'Contest not found';
-          return;
-        }
+      // Check access status first
+      try {
+        accessStatus = await contestService.getContestAccessStatus(contestId);
+      } catch (err) {
+        console.error('Error checking access status:', err);
+        accessStatus = { can_access: false, reason: 'Unable to check access status' };
+      }
 
-        // Check if problem is part of this contest
-        if (!contest.problems || !contest.problems.includes(problemId)) {
-          error = 'Problem not found in this contest';
-          return;
+      if (!accessStatus.can_access) {
+        error = accessStatus.reason;
+        return;
+      }
+
+      // Load contest details based on access status
+      if (accessStatus?.can_access) {
+        // User has full access - load complete contest details
+        const contestsResponse = await authService.authenticatedRequest('http://localhost:5000/contests');
+        if (contestsResponse.ok) {
+          const contests = await contestsResponse.json();
+          contest = contests.find((c: any) => c.id.toString() === contestId);
+
+          if (!contest) {
+            error = 'Contest not found';
+            return;
+          }
+
+          // Check if problem is part of this contest
+          if (!contest.problems || !contest.problems.includes(problemId)) {
+            error = 'Problem not found in this contest';
+            return;
+          }
         }
+      } else if (accessStatus?.is_registered && accessStatus?.contest_status === 'upcoming') {
+        // User is registered for upcoming contest
+        contest = {
+          id: parseInt(contestId),
+          name: 'Contest',
+          description: 'You are registered for this contest. Details will be available when the contest starts.',
+          start_time: null,
+          end_time: null,
+          problems: []
+        };
+        error = 'Contest has not started yet. You are registered and will be able to view problems when it begins.';
+        return;
+      } else {
+        // User can't access the problem
+        contest = {
+          id: parseInt(contestId),
+          name: 'Contest',
+          description: 'Access restricted',
+          start_time: null,
+          end_time: null,
+          problems: []
+        };
+        error = accessStatus?.reason || 'Access denied';
+        return;
       }
 
       // Load problem metadata
@@ -235,6 +277,31 @@
     <div class="loading">Loading problem...</div>
   {:else if error}
     <div class="error-message">{error}</div>
+    {#if accessStatus && !accessStatus.can_access}
+      {#if accessStatus.is_registered && accessStatus.contest_status === 'upcoming'}
+        <!-- User is registered for upcoming contest -->
+        <div class="access-denied-card registered-card">
+          <h2>Registration Confirmed</h2>
+          <p>✅ You are registered for this contest!</p>
+          <p>The contest details and problems will be available when the contest starts.</p>
+        </div>
+      {:else if !accessStatus.is_registered && accessStatus.can_register}
+        <!-- User can register -->
+        <div class="access-denied-card">
+          <h2>Registration Required</h2>
+          <p>You need to register for this contest to view problems.</p>
+          <button class="btn btn-primary" on:click={goBackToContest}>
+            Register for Contest
+          </button>
+        </div>
+      {:else}
+        <!-- User can't register -->
+        <div class="access-denied-card restricted-card">
+          <h2>Access Restricted</h2>
+          <p>{accessStatus.reason}</p>
+        </div>
+      {/if}
+    {/if}
     <div class="navigation-buttons">
       <button class="btn btn-secondary" on:click={goBackToContest}>
         Back to Contest
@@ -415,12 +482,46 @@
   }
 
   .error-message {
-    background: #f44336;
-    color: white;
+    background: #4a4a4a;
+    color: #ff6b6b;
     padding: 1rem;
     border-radius: 4px;
     margin-bottom: 1rem;
     font-family: 'Courier New', monospace;
+    border: 1px solid #666;
+  }
+
+  .access-denied-card {
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 1rem 0;
+    text-align: center;
+  }
+
+  .access-denied-card h2 {
+    font-family: 'Courier New', monospace;
+    color: #f5f5f5;
+    margin: 0 0 1rem 0;
+    font-size: 1.5rem;
+    font-weight: 500;
+  }
+
+  .access-denied-card p {
+    color: #cccccc;
+    font-family: 'Courier New', monospace;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .access-denied-card.registered-card p:first-child {
+    color: #4caf50;
+    font-weight: 500;
+  }
+
+  .access-denied-card.restricted-card p {
+    color: #ff6b6b;
   }
 
   .header {

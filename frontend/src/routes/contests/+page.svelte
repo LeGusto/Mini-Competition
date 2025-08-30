@@ -1,12 +1,14 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
+  import { contestService } from '$lib/services/contest';
   import { authStore } from '$lib/stores/auth';
   import { onMount } from 'svelte';
 
   let contests: any[] = [];
   let loading = true;
   let error = '';
+  let registeringContestId: string | null = null;
 
   onMount(async () => {
     await loadContests();
@@ -17,9 +19,22 @@
       loading = true;
       const userTimezone = $authStore.user?.timezone || 'UTC';
       const response = await authService.authenticatedRequest(`http://localhost:5000/contests?timezone=${encodeURIComponent(userTimezone)}`);
-      
+
       if (response.ok) {
         contests = await response.json();
+
+        // Check registration status for each contest
+        for (let contest of contests) {
+          try {
+            const regStatus = await contestService.checkRegistrationStatus(contest.id.toString());
+            contest.isRegistered = regStatus.is_registered;
+            contest.registrationData = regStatus.registration_data;
+          } catch (err) {
+            console.error(`Error checking registration for contest ${contest.id}:`, err);
+            contest.isRegistered = false;
+            contest.registrationData = null;
+          }
+        }
       } else {
         error = 'Failed to load contests';
       }
@@ -84,6 +99,27 @@
     goto(`/contest/${contestId}`);
   }
 
+  async function registerAndViewContest(contestId: number) {
+    try {
+      registeringContestId = contestId.toString();
+      const result = await contestService.registerForContest(contestId.toString());
+
+      if (result.success) {
+        // Reload contests to update registration status
+        await loadContests();
+        // Navigate to the contest
+        goto(`/contest/${contestId}`);
+      } else {
+        console.error('Registration failed:', result.message);
+        // Could show an error message here if needed
+      }
+    } catch (err) {
+      console.error('Error registering for contest:', err);
+    } finally {
+      registeringContestId = null;
+    }
+  }
+
   function createContest() {
     goto('/contests/create');
   }
@@ -143,12 +179,30 @@
                 </span>
               </td>
               <td>
-                <button 
-                  class="btn btn-small btn-secondary" 
-                  on:click={() => viewContest(contest.id)}
-                >
-                  View
-                </button>
+                {#if status === 'ended' || (contest.isRegistered && status === 'active')}
+                  <button
+                    class="btn btn-small btn-secondary"
+                    on:click={() => viewContest(contest.id)}
+                  >
+                    View
+                  </button>
+                {:else if contest.isRegistered && status === 'upcoming'}
+                  <button
+                    class="btn btn-small btn-secondary"
+                    on:click={() => viewContest(contest.id)}
+                    disabled
+                  >
+                    Registered
+                  </button>
+                {:else}
+                  <button
+                    class="btn btn-small btn-primary"
+                    on:click={() => registerAndViewContest(contest.id)}
+                    disabled={registeringContestId === contest.id.toString()}
+                  >
+                    {registeringContestId === contest.id.toString() ? 'Registering...' : 'Register'}
+                  </button>
+                {/if}
               </td>
             </tr>
           {/each}
@@ -310,6 +364,13 @@
 
   .btn-secondary:hover {
     background: #777;
+  }
+
+  .btn-secondary:disabled {
+    background: #4a4a4a;
+    color: #888;
+    cursor: not-allowed;
+    opacity: 0.7;
   }
 
   @media (max-width: 768px) {

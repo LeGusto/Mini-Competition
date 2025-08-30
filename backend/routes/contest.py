@@ -84,3 +84,52 @@ def get_user_contest_submissions(contest_id):
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"message": str(e)}), 500
+
+
+@contest_bp.route("/contest/<contest_id>/register", methods=["POST"])
+@require_auth
+def register_for_contest(contest_id):
+    """Register the current user for a contest"""
+    try:
+        user_id = request.user_id
+        result = contest_service.register_for_contest(contest_id, user_id)
+        if result["success"]:
+            return jsonify(result), 201
+        else:
+            return jsonify(result), 400
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+@contest_bp.route("/contest/<contest_id>/access", methods=["GET"])
+@require_auth
+def get_contest_access(contest_id):
+    """Get access status for the current user to view contest problems"""
+    try:
+        user_id = request.user_id
+        result = contest_service.get_contest_access_status(contest_id, user_id)
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
+
+
+@contest_bp.route("/contest/<contest_id>/registration-status", methods=["GET"])
+@require_auth
+def get_registration_status(contest_id):
+    """Get registration status for the current user for a contest"""
+    try:
+        user_id = request.user_id
+        is_registered = contest_service.check_user_registration(contest_id, user_id)
+        registration_data = (
+            contest_service.get_user_registration_data(contest_id, user_id)
+            if is_registered
+            else None
+        )
+        return (
+            jsonify(
+                {"is_registered": is_registered, "registration_data": registration_data}
+            ),
+            200,
+        )
+    except Exception as e:
+        return jsonify({"message": str(e)}), 500
