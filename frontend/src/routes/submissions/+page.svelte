@@ -141,16 +141,18 @@
 </svelte:head>
 
 <div class="submissions-container">
-    <div class="submissions-header">
-        <h1>My Submissions</h1>
-        <button 
-            class="submissions-refresh-btn" 
-            on:click={fetchSubmissions}
-            disabled={loading}
-        >
-            {loading ? 'Loading...' : 'Refresh'}
-        </button>
-    </div>
+    {#if !loading}
+        <div class="submissions-header">
+            <h1>My Submissions</h1>
+            <button
+                class="submissions-refresh-btn"
+                on:click={fetchSubmissions}
+                disabled={loading}
+            >
+                Refresh
+            </button>
+        </div>
+    {/if}
 
     {#if error}
         <div class="submissions-error-message">
@@ -414,9 +416,9 @@
     }
 
     .submissions-status-pending {
-        color: #aaa;
-        background: #3a3a3a;
-        border: 1px solid #666;
+        color: #ff9800;
+        background: #3a2a1a;
+        border: 1px solid #ff9800;
         padding: 6px 10px;
     }
 

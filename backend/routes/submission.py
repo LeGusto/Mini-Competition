@@ -88,20 +88,41 @@ def receive_judge_result():
         if result["status_code"] == 200:
             print(f"✅ Submission {submission_id} updated successfully")
 
-            # Check if this submission was made during an active contest
-            print(
-                f"🔍 Checking if problem {problem_id} is part of an active contest..."
-            )
+            # Check for all active contests where the user is registered and the problem exists
+            print(f"🔍 Checking for active contests for problem {problem_id}...")
 
             try:
-                contest = submission_service.get_active_contest_for_problem(problem_id)
+                # Get submission details first to get user_id
+                submission_details = submission_service.get_submission_details(
+                    submission_id
+                )
 
-                if contest:
+                if not submission_details:
                     print(
-                        f"🎯 Found active contest: {contest['name']} (ID: {contest['id']})"
+                        f"❌ Could not get submission details for submission {submission_id}"
                     )
+                    return (
+                        jsonify(
+                            {
+                                "message": "Submission processed but contest tracking failed"
+                            }
+                        ),
+                        200,
+                    )
+
+                user_id = submission_details["user_id"]
+                print(f"👤 User ID: {user_id}")
+
+                # Get all active contests for this user and problem
+                contests = (
+                    submission_service.get_all_active_contests_for_user_and_problem(
+                        user_id, problem_id
+                    )
+                )
+
+                if contests:
                     print(
-                        f"   Contest time range: {contest['start_time']} to {contest['end_time']}"
+                        f"🎯 Found {len(contests)} active contests for this submission"
                     )
 
                     # Determine if submission was accepted
@@ -125,26 +146,24 @@ def receive_judge_result():
                                 f"❌ Submission failed, penalty time: {penalty_time} minutes"
                             )
 
-                    # Create contest submission entry
-                    print(f"📝 Creating contest submission entry...")
-                    submission_details = submission_service.get_submission_details(
-                        submission_id
+                    # Create contest submission entries for ALL matching contests
+                    print(
+                        f"📝 Creating contest submission entries for {len(contests)} contests..."
                     )
-                    if submission_details:
-                        print(f"   User ID: {submission_details['user_id']}")
+                    submission_time = submission_details["submission_time"]
+
+                    for contest in contests:
                         print(
-                            f"   Submission time: {submission_details['submission_time']}"
+                            f"   📋 Processing contest: {contest['name']} (ID: {contest['id']})"
                         )
 
                         contest_submission_id = (
                             submission_service.create_contest_submission(
                                 contest["id"],
-                                submission_details["user_id"],
+                                user_id,
                                 problem_id,
                                 submission_id,
-                                submission_details[
-                                    "submission_time"
-                                ],  # Use original submission time
+                                submission_time,
                                 is_accepted,
                                 score,
                                 penalty_time,
@@ -153,20 +172,15 @@ def receive_judge_result():
 
                         if contest_submission_id:
                             print(
-                                f"✅ Successfully created contest submission {contest_submission_id}"
+                                f"   ✅ Created contest submission {contest_submission_id} for contest {contest['id']}"
                             )
                         else:
-                            print("❌ Failed to create contest submission")
-                    else:
-                        print(
-                            f"❌ Could not get submission details for {submission_id}"
-                        )
+                            print(
+                                f"   ❌ Failed to create contest submission for contest {contest['id']}"
+                            )
                 else:
                     print(
-                        f"ℹ️ Submission {submission_id} was not made during an active contest"
-                    )
-                    print(
-                        f"   This is normal for practice problems or submissions outside contest hours"
+                        f"ℹ️ Submission {submission_id} was not made for any active contests where user is registered"
                     )
             except Exception as e:
                 print(f"❌ Error processing contest submission logic: {e}")

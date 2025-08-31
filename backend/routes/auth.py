@@ -33,9 +33,10 @@ def register():
     data = request.json
     username = data.get("username")
     password = data.get("password")
+    timezone = data.get("timezone")
 
     try:
-        result = auth_service.register_user(username, password)
+        result = auth_service.register_user(username, password, timezone)
         return jsonify(result), 201
     except Exception as e:
         return jsonify({"message": str(e)}), 400

@@ -16,6 +16,12 @@
   let availableProblems: any[] = [];
 
   onMount(async () => {
+    // Check if user is admin, redirect if not
+    if ($authStore.user?.role !== 'admin') {
+      goto('/contests');
+      return;
+    }
+
     // Load available problems
     try {
       const response = await authService.authenticatedRequest('http://localhost:5000/general/problems');

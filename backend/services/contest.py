@@ -398,7 +398,8 @@ class ContestService:
                                 "attempts": len(submissions),
                                 "penalty_attempts": penalty_attempts,
                                 "solve_time": solve_minutes,
-                                "is_first_blood": first_blood.get(problem_id) == user_id,
+                                "is_first_blood": first_blood.get(problem_id)
+                                == user_id,
                             }
                         else:
                             # Check if there are any pending submissions from main submissions table

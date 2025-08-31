@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
   import { contestService } from '$lib/services/contest';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
 
   let contest: any = null;
   let problems: any[] = [];
@@ -14,12 +14,22 @@
   let registering = false;
   let registrationMessage = '';
   let registrationData: any = null;
+  let userSubmissions: any[] = [];
+  let pendingSubmissions: any[] = [];
+  let contestTimer: string = '';
+  let timerInterval: any = null;
 
   $: contestId = $page.params.id;
 
   onMount(async () => {
     if (contestId) {
       await loadContest();
+    }
+  });
+
+  onDestroy(() => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
     }
   });
 
@@ -116,7 +126,14 @@
         if (response.ok) {
           const data = await response.json();
           problems = data.problems || [];
+          // Load user submissions for this contest
+          await loadUserSubmissions();
+          // Start contest timer
+          startContestTimer(contest);
         }
+      } else {
+        // Start contest timer even if user doesn't have access (for upcoming contests)
+        startContestTimer(contest);
       }
 
     } catch (err) {
@@ -124,6 +141,37 @@
       console.error('Error loading contest:', err);
     } finally {
       loading = false;
+    }
+  }
+
+  async function loadUserSubmissions() {
+    try {
+      // Load contest submissions
+      const contestResponse = await authService.authenticatedRequest(`http://localhost:5000/contest/${contestId}/submissions`);
+      if (contestResponse.ok) {
+        userSubmissions = await contestResponse.json();
+      } else {
+        console.error('Failed to load contest submissions');
+        userSubmissions = [];
+      }
+
+      // Also load regular submissions to check for pending status
+      const submissionsResponse = await authService.authenticatedRequest('http://localhost:5000/submission/all');
+      if (submissionsResponse.ok) {
+        const allSubmissions = await submissionsResponse.json();
+        // Store pending submissions separately for status checking
+        pendingSubmissions = allSubmissions.filter((sub: any) => sub.status === 'pending');
+      } else {
+        console.error('Failed to load regular submissions');
+        pendingSubmissions = [];
+      }
+
+      console.log('User submissions:', userSubmissions);
+      console.log('Pending submissions:', pendingSubmissions);
+    } catch (err) {
+      console.error('Error loading user submissions:', err);
+      userSubmissions = [];
+      pendingSubmissions = [];
     }
   }
 
@@ -197,12 +245,121 @@
     }
   }
 
-  function viewProblem(problemId: string) {
+  function startContestTimer(contest: any) {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+
+    const updateTimer = () => {
+      if (!contest) return;
+
+      const now = new Date();
+      let targetTime: Date | null = null;
+      let timerType = '';
+
+      // Handle new timezone-aware format
+      let startTime: Date | null = null;
+      let endTime: Date | null = null;
+
+      if (contest.start_time && typeof contest.start_time === 'object' && contest.start_time.utc_iso) {
+        startTime = new Date(contest.start_time.utc_iso);
+        endTime = new Date(contest.end_time.utc_iso);
+      } else if (contest.start_time && contest.end_time) {
+        startTime = new Date(contest.start_time);
+        endTime = new Date(contest.end_time);
+      }
+
+      if (!startTime || !endTime) {
+        contestTimer = '';
+        return;
+      }
+
+      if (now < startTime) {
+        targetTime = startTime;
+        timerType = 'Starts in: ';
+      } else if (now >= startTime && now < endTime) {
+        targetTime = endTime;
+        timerType = 'Ends in: ';
+      } else {
+        contestTimer = 'Contest Ended';
+        return;
+      }
+
+      const timeDiff = targetTime.getTime() - now.getTime();
+
+      if (timeDiff <= 0) {
+        contestTimer = timerType === 'Starts in: ' ? 'Contest Starting...' : 'Contest Ended';
+        return;
+      }
+
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+      if (days > 0) {
+        contestTimer = `${timerType}${days}d ${hours}h ${minutes}m`;
+      } else if (hours > 0) {
+        contestTimer = `${timerType}${hours}h ${minutes}m ${seconds}s`;
+      } else {
+        contestTimer = `${timerType}${minutes}m ${seconds}s`;
+      }
+    };
+
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+
+  async function viewProblem(problemId: string) {
+    // Refresh user submissions when viewing a problem to catch any recent submissions
+    await loadUserSubmissions();
     goto(`/contest/${contestId}/problem/${problemId}`);
   }
 
+
+
   function goBack() {
     goto('/contests');
+  }
+
+    function getProblemStatus(problemId: number): string {
+    // Check if there are any contest submissions for this problem
+    const problemSubmissions = userSubmissions.filter((sub: any) => sub.problem_id === problemId);
+
+    if (!userSubmissions || userSubmissions.length === 0 || problemSubmissions.length === 0) {
+      // No contest submissions yet - check main submissions table for pending
+      const pendingForProblem = pendingSubmissions.filter((sub: any) => sub.problem_id === problemId);
+      if (pendingForProblem.length > 0) {
+        return 'pending'; // orange
+      }
+      return 'untried'; // gray
+    }
+
+    // Sort by submission time (most recent first)
+    problemSubmissions.sort((a, b) => new Date(b.submission_time).getTime() - new Date(a.submission_time).getTime());
+
+    // Check if any submission is accepted
+    const acceptedSubmission = problemSubmissions.find((sub: any) => sub.is_accepted);
+    if (acceptedSubmission) {
+      return 'solved'; // green
+    }
+
+    // No accepted submission - check if there are pending submissions in main table
+    const pendingForProblem = pendingSubmissions.filter((sub: any) => sub.problem_id === problemId);
+    if (pendingForProblem.length > 0) {
+      return 'pending'; // orange
+    }
+
+    // Check the most recent submission for judge_response
+    const mostRecent = problemSubmissions[0];
+
+    // If judge_response is null or no results, it's pending
+    if (!mostRecent.judge_response || !mostRecent.judge_response.results || mostRecent.judge_response.results.length === 0) {
+      return 'pending'; // orange
+    }
+
+    // If we have results but no accepted submission, it's failed
+    return 'failed'; // red
   }
 
   async function registerForContest() {
@@ -233,25 +390,10 @@
     <div class="loading">Loading contest...</div>
   {:else if error}
     <div class="error-message">{error}</div>
-    <button class="btn btn-secondary" on:click={goBack}>
-      Back to Contests
-    </button>
   {:else if contest}
     {@const status = getContestStatus(contest.start_time, contest.end_time)}
     
     <div class="contest-header">
-      <div class="contest-header-top">
-        <button class="btn btn-secondary back-btn" on:click={goBack}>
-          ← Back to Contests
-        </button>
-
-        <div class="contest-actions">
-          <a href="/contest/{contestId}/leaderboard" class="btn btn-primary">
-            📊 Leaderboard
-          </a>
-        </div>
-      </div>
-
       <div class="contest-info">
         <h1>{contest.name}</h1>
         <div class="contest-meta">
@@ -259,130 +401,142 @@
             {getStatusText(status)}
           </span>
           <span class="contest-id">Contest #{contest.id}</span>
+          {#if contestTimer}
+            <span class="contest-timer">{contestTimer}</span>
+          {/if}
+          <div class="contest-actions">
+            <a href="/contest/{contestId}/leaderboard" class="btn btn-leaderboard">
+              Leaderboard
+            </a>
+          </div>
         </div>
       </div>
+
+
     </div>
 
-    <div class="contest-details">
-      <!-- Access Control Section -->
-      {#if accessStatus && !accessStatus.can_access}
-        {#if accessStatus.is_registered && accessStatus.contest_status === 'upcoming'}
-          <!-- User is registered for upcoming contest -->
-          <div class="access-control-card registered-card">
-            <h2>Registration Confirmed</h2>
-            <div class="access-message">
-              <p>✅ You are registered for this contest!</p>
-              <p>The contest details and problems will be available when the contest starts.</p>
-              {#if registrationData}
-                <p class="registration-time">Registered on: {formatDateTime(registrationData.registered_at)}</p>
-              {/if}
-            </div>
+    <!-- Access Control Section -->
+    {#if accessStatus && !accessStatus.can_access}
+      {#if accessStatus.is_registered && accessStatus.contest_status === 'upcoming'}
+        <!-- User is registered for upcoming contest -->
+        <div class="access-control-card registered-card">
+          <h2>Registration Confirmed</h2>
+          <div class="access-message">
+            <p>✅ You are registered for this contest!</p>
+            <p>The contest details and problems will be available when the contest starts.</p>
+            {#if registrationData}
+              <p class="registration-time">Registered on: {formatDateTime(registrationData.registered_at)}</p>
+            {/if}
           </div>
-        {:else if accessStatus.is_registered && accessStatus.contest_status === 'active'}
-          <!-- User is registered for active contest but still can't access - this should not happen -->
-          <div class="access-control-card restricted-card">
-            <h2>Access Issue</h2>
-            <div class="access-message">
-              <p>There seems to be an issue with contest access. Please contact support.</p>
-              <p>Reason: {accessStatus.reason}</p>
-            </div>
+        </div>
+      {:else if accessStatus.is_registered && accessStatus.contest_status === 'active'}
+        <!-- User is registered for active contest but still can't access - this should not happen -->
+        <div class="access-control-card restricted-card">
+          <h2>Access Issue</h2>
+          <div class="access-message">
+            <p>There seems to be an issue with contest access. Please contact support.</p>
+            <p>Reason: {accessStatus.reason}</p>
           </div>
-        {:else if !accessStatus.is_registered && accessStatus.can_register}
-          <!-- User can register -->
-          <div class="access-control-card">
-            <h2>Registration Required</h2>
-            <div class="access-message">
-              <p>To participate in this contest, you need to register first.</p>
-              <button
-                class="btn btn-primary register-btn"
-                on:click={registerForContest}
-                disabled={registering}
-              >
-                {registering ? 'Registering...' : 'Register for Contest'}
-              </button>
-              {#if registrationMessage}
-                <div class="registration-result {registrationMessage.includes('success') ? 'success' : 'error'}">
-                  {registrationMessage}
-                </div>
-              {/if}
-            </div>
+        </div>
+      {:else if !accessStatus.is_registered && accessStatus.can_register}
+        <!-- User can register -->
+        <div class="access-control-card">
+          <h2>Registration Required</h2>
+          <div class="access-message">
+            <p>To participate in this contest, you need to register first.</p>
+            <button
+              class="btn btn-primary register-btn"
+              on:click={registerForContest}
+              disabled={registering}
+            >
+              {registering ? 'Registering...' : 'Register for Contest'}
+            </button>
+            {#if registrationMessage}
+              <div class="registration-result {registrationMessage.includes('success') ? 'success' : 'error'}">
+                {registrationMessage}
+              </div>
+            {/if}
           </div>
-        {:else}
-          <!-- User can't register (contest ended or other restriction) -->
-          <div class="access-control-card restricted-card">
-            <h2>Access Restricted</h2>
-            <div class="access-message">
-              <p>{accessStatus.reason}</p>
-            </div>
+        </div>
+      {:else}
+        <!-- User can't register (contest ended or other restriction) -->
+        <div class="access-control-card restricted-card">
+          <h2>Access Restricted</h2>
+          <div class="access-message">
+            <p>{accessStatus.reason}</p>
           </div>
-        {/if}
+        </div>
       {/if}
+    {/if}
 
+    <!-- Problems Section - FULL WIDTH TOP -->
+    {#if accessStatus?.can_access && problems.length > 0}
+      <div class="problems-card">
+        <h2>Contest Problems</h2>
+        <div class="problems-grid">
+          {#each problems as problem, index}
+            <div class="contest-problem-item status-{getProblemStatus(problem.id)}">
+              <div class="problem-header">
+                <div class="problem-letter">{String.fromCharCode(65 + index)}</div>
+                <div class="problem-info">
+                  <div class="problem-id">Problem {problem.id}</div>
+                  <div class="problem-limits">
+                    <span class="limit">Time: {problem.time_limit}ms</span>
+                    <span class="limit">Memory: {problem.memory_limit}MB</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                class="btn btn-problem"
+                on:click={() => viewProblem(problem.id)}
+              >
+                Solve Problem
+              </button>
+            </div>
+          {/each}
+        </div>
+      </div>
+    {:else if accessStatus?.can_access}
+      <div class="empty-problems">
+        <h3>No Problems Yet</h3>
+        <p>Problems will be added to this contest soon.</p>
+      </div>
+    {/if}
+
+    <!-- Contest Details Section - BOTTOM -->
+    <div class="bottom-details">
       <div class="detail-card">
-        <h2>Contest Information</h2>
-        <div class="detail-grid">
-          <div class="detail-item">
-            <div class="detail-label">Description:</div>
-            <span>{contest.description || 'No description provided'}</span>
-          </div>
+        <h2>Contest Details</h2>
+        <div class="detail-grid-bottom">
           <div class="detail-item">
             <div class="detail-label">Start Time:</div>
-            <span>{formatDateTime(contest.start_time)}</span>
+            <span class="detail-value">{formatDateTime(contest.start_time)}</span>
           </div>
           <div class="detail-item">
             <div class="detail-label">End Time:</div>
-            <span>{formatDateTime(contest.end_time)}</span>
+            <span class="detail-value">{formatDateTime(contest.end_time)}</span>
           </div>
           <div class="detail-item">
             <div class="detail-label">Problems:</div>
-            <span>{contest.problems ? contest.problems.length : 0} problems</span>
+            <span class="detail-value">{contest.problems ? contest.problems.length : 0} problems</span>
           </div>
           {#if registrationData}
             <div class="detail-item">
               <div class="detail-label">Registered:</div>
-              <span>{formatDateTime(registrationData.registered_at)}</span>
+              <span class="detail-value">{formatDateTime(registrationData.registered_at)}</span>
             </div>
           {/if}
         </div>
       </div>
 
-      {#if accessStatus?.can_access && problems.length > 0}
-        <div class="problems-card">
-          <h2>Problems</h2>
-          <div class="problems-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Time Limit</th>
-                  <th>Memory Limit</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each problems as problem}
-                  <tr>
-                    <td class="problem-id">{problem.id}</td>
-                    <td>{problem.time_limit}ms</td>
-                    <td>{problem.memory_limit}MB</td>
-                    <td>
-                      <button
-                        class="btn btn-small btn-primary"
-                        on:click={() => viewProblem(problem.id)}
-                      >
-                        View Problem
-                      </button>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
+      <!-- Description Section -->
+      {#if contest.description && contest.description !== 'No description provided'}
+        <details class="description-card">
+          <summary>Contest Description</summary>
+          <div class="description-content">
+            <p>{contest.description}</p>
           </div>
-        </div>
-      {:else if accessStatus?.can_access}
-        <div class="empty-problems">
-          <p>No problems assigned to this contest yet.</p>
-        </div>
+        </details>
       {/if}
     </div>
   {:else}
@@ -395,16 +549,29 @@
 
 <style>
   .contest-container {
-    max-width: 1000px;
-    margin: 2rem auto;
-    padding: 0 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    width: 100%;
   }
 
   .loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 1rem;
     text-align: center;
-    padding: 2rem;
     color: #aaa;
     font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    z-index: 1000;
   }
 
   .error-message {
@@ -418,10 +585,16 @@
   }
 
   .contest-header {
-    margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto 2rem auto;
+    padding: 2.5rem 2rem;
+    background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+    border: 1px solid #555;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 
   .contest-header-top {
@@ -437,27 +610,58 @@
     align-items: center;
   }
 
-  .back-btn {
+  .btn.back-btn {
     flex-shrink: 0;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    width: auto !important;
+    max-width: max-content !important;
+    min-width: auto !important;
   }
 
   .contest-info h1 {
     font-family: 'Courier New', monospace;
     color: #f5f5f5;
-    margin: 0 0 0.5rem 0;
-    font-size: 2.2rem;
-    font-weight: 500;
+    margin: 0 0 1rem 0;
+    font-size: 2.5rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   .contest-meta {
     display: flex;
-    gap: 1rem;
+    gap: 1.5rem;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .contest-meta .contest-actions {
+    margin-left: auto;
   }
 
   .contest-id {
-    color: #aaa;
+    color: #cccccc;
     font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    font-weight: 500;
+    background: #4a4a4a;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #666;
+  }
+
+  .contest-timer {
+    color: #ef5350;
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    font-weight: 600;
+    background: #3a1a1a;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #f44336;
   }
 
   .registration-status {
@@ -481,12 +685,14 @@
   }
 
   .status-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
     font-weight: 600;
     text-transform: uppercase;
     font-family: 'Courier New', monospace;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   }
 
   .status-upcoming {
@@ -504,20 +710,25 @@
     color: #f5f5f5;
   }
 
-  .contest-details {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
+  .bottom-details {
+    margin-top: 2rem;
   }
 
-  .detail-card, .problems-card, .access-control-card {
+  .detail-grid-bottom {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+
+  .detail-card, .problems-card, .access-control-card, .description-card {
     background: #3a3a3a;
     border: 1px solid #555;
     border-radius: 8px;
     padding: 1.5rem;
+    margin-bottom: 2rem;
   }
 
-  .detail-card h2, .problems-card h2, .access-control-card h2 {
+  .detail-card h2, .problems-card h2, .access-control-card h2, .description-card summary {
     font-family: 'Courier New', monospace;
     color: #f5f5f5;
     margin: 0 0 1rem 0;
@@ -525,9 +736,9 @@
     font-weight: 500;
   }
 
-  .detail-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  .detail-list {
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
   }
 
@@ -602,43 +813,9 @@
     border: 1px solid #ff6b6b;
   }
 
-  .problems-table {
-    overflow-x: auto;
-  }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'Courier New', monospace;
-  }
 
-  th, td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #555;
-    color: #cccccc;
-  }
 
-  th {
-    background: #4a4a4a;
-    color: #f5f5f5;
-    font-weight: 600;
-  }
-
-  .problem-id {
-    font-weight: 600;
-    color: #f5f5f5;
-  }
-
-  .empty-problems {
-    text-align: center;
-    padding: 2rem;
-    color: #aaa;
-    font-family: 'Courier New', monospace;
-    background: #3a3a3a;
-    border: 1px solid #555;
-    border-radius: 8px;
-  }
 
   .btn {
     padding: 0.5rem 1rem;
@@ -675,14 +852,288 @@
     background: #777;
   }
 
+  /* New leaderboard button styles */
+  .btn-leaderboard {
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+    width: auto !important;
+    max-width: max-content !important;
+    min-width: auto !important;
+  }
+
+  .btn-leaderboard:hover {
+    background: linear-gradient(135deg, #ff5722, #f57c00);
+  }
+
+
+
+  /* Problems grid layout */
+  .problems-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+  }
+
+  /* NEW CLEAN PROBLEM ITEM STYLES */
+  .contest-problem-item {
+    background: #3a3a3a;
+    border: 2px solid #666;
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: border-color 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .contest-problem-item:hover {
+    border-color: #888;
+  }
+
+  /* STATUS COLORS - CLEAN APPROACH */
+  .contest-problem-item.status-untried {
+    background: #2a2a2a;
+    border-color: #666;
+  }
+
+  .contest-problem-item.status-untried:hover {
+    border-color: #888;
+  }
+
+  .contest-problem-item.status-solved {
+    background: #1a3a1a;
+    border-color: #4caf50;
+  }
+
+  .contest-problem-item.status-solved:hover {
+    border-color: #66bb6a;
+  }
+
+  .contest-problem-item.status-failed {
+    background: #3a1a1a;
+    border-color: #f44336;
+  }
+
+  .contest-problem-item.status-failed:hover {
+    border-color: #ef5350;
+  }
+
+  .contest-problem-item.status-pending {
+    background: #3a2a1a;
+    border-color: #ff9800;
+  }
+
+  .contest-problem-item.status-pending:hover {
+    border-color: #ffa726;
+  }
+
+  .problem-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .problem-letter {
+    background: #666;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* Letter badge colors based on status */
+  .contest-problem-item.status-untried .problem-letter {
+    background: #666;
+  }
+
+  .contest-problem-item.status-solved .problem-letter {
+    background: #4caf50;
+  }
+
+  .contest-problem-item.status-failed .problem-letter {
+    background: #f44336;
+  }
+
+  .contest-problem-item.status-pending .problem-letter {
+    background: #ff9800;
+  }
+
+  .problem-info {
+    flex: 1;
+  }
+
+  .problem-id {
+    color: #f5f5f5;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 0.25rem;
+  }
+
+  .problem-limits {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.85rem;
+  }
+
+  .limit {
+    color: #aaa;
+    font-family: 'Courier New', monospace;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .btn-problem {
+    background: #666;
+    color: white;
+    width: 100%;
+    font-weight: 600;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .btn-problem:hover {
+    background: #777;
+  }
+
+  /* Button colors based on status */
+  .contest-problem-item.status-untried .btn-problem {
+    background: #666;
+  }
+
+  .contest-problem-item.status-untried .btn-problem:hover {
+    background: #777;
+  }
+
+  .contest-problem-item.status-solved .btn-problem {
+    background: #4caf50;
+  }
+
+  .contest-problem-item.status-solved .btn-problem:hover {
+    background: #45a049;
+  }
+
+  .contest-problem-item.status-failed .btn-problem {
+    background: #f44336;
+  }
+
+  .contest-problem-item.status-failed .btn-problem:hover {
+    background: #d32f2f;
+  }
+
+  .contest-problem-item.status-pending .btn-problem {
+    background: #ff9800;
+  }
+
+  .contest-problem-item.status-pending .btn-problem:hover {
+    background: #f57c00;
+  }
+
+  /* Empty problems styling */
+  .empty-problems {
+    text-align: center;
+    padding: 2rem;
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 8px;
+  }
+
+  .empty-problems h3 {
+    color: #f5f5f5;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+  }
+
+  .empty-problems p {
+    color: #aaa;
+    font-family: 'Courier New', monospace;
+  }
+
+  /* Improved detail styles */
+  .detail-value {
+    color: #f5f5f5 !important;
+    font-weight: 500;
+  }
+
+  /* Description collapsible */
+  .description-card {
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .description-card summary {
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    background: #4a4a4a;
+    color: #f5f5f5;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    user-select: none;
+    transition: background 0.2s ease;
+  }
+
+  .description-card summary:hover {
+    background: #555;
+  }
+
+  .description-content {
+    padding: 1.5rem;
+  }
+
+  .description-content p {
+    color: #cccccc;
+    font-family: 'Courier New', monospace;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* FORCED OVERRIDES FOR GLOBAL CSS ISSUES */
+  .contest-header .btn {
+    width: auto !important;
+  }
+  
+  .contest-actions .btn {
+    width: auto !important;
+  }
+
+
+
   @media (max-width: 768px) {
-    .detail-grid {
-      grid-template-columns: 1fr;
+    .contest-container {
+      padding: 1rem;
+    }
+
+    .contest-header {
+      padding: 2rem 1rem;
+      margin-bottom: 2rem;
     }
 
     .contest-meta {
       flex-direction: column;
       align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .contest-meta .contest-actions {
+      margin-left: 0;
+      margin-top: 0.5rem;
     }
 
     .contest-header-top {
@@ -692,7 +1143,29 @@
     }
 
     .contest-info h1 {
-      font-size: 1.8rem;
+      font-size: 2rem;
+    }
+
+    .problems-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-grid-bottom {
+      grid-template-columns: 1fr;
+    }
+
+    .problem-limits {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .btn-leaderboard {
+      justify-content: center;
+      width: auto !important;
+    }
+
+    .btn.back-btn {
+      width: auto !important;
     }
   }
 </style>

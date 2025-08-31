@@ -10,6 +10,9 @@
   let error = '';
   let registeringContestId: string | null = null;
 
+  // Check if current user is admin
+  $: isAdmin = $authStore.user?.role === 'admin';
+
   onMount(async () => {
     await loadContests();
   });
@@ -149,12 +152,16 @@
 </script>
 
 <div class="contests-container">
-  <div class="header">
-    <h1>Contests</h1>
-    <button class="btn btn-primary" on:click={createContest}>
-      Create Contest
-    </button>
-  </div>
+  {#if !loading}
+    <div class="header">
+      <h1>Contests</h1>
+      {#if isAdmin}
+        <button class="btn btn-primary" on:click={createContest}>
+          Create Contest
+        </button>
+      {/if}
+    </div>
+  {/if}
 
   {#if loading}
     <div class="loading">Loading contests...</div>
@@ -163,9 +170,13 @@
   {:else if contests.length === 0}
     <div class="empty-state">
       <p>No contests available.</p>
-      <button class="btn btn-primary" on:click={createContest}>
-        Create Your First Contest
-      </button>
+      {#if isAdmin}
+        <button class="btn btn-primary" on:click={createContest}>
+          Create Your First Contest
+        </button>
+      {:else}
+        <p>Check back later for new contests!</p>
+      {/if}
     </div>
   {:else}
     <div class="contests-table">

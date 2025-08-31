@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from services.contest import ContestService
-from services.decorators import require_auth
+from services.decorators import require_auth, require_admin
 
 contest_bp = Blueprint("contest", __name__)
 contest_service = ContestService()
@@ -26,7 +26,7 @@ def get_contests():
 
 
 @contest_bp.route("/contest", methods=["POST"])
-@require_auth
+@require_admin
 def create_contest():
     """Create a new contest"""
     try:
