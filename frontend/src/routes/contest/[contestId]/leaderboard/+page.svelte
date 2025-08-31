@@ -277,7 +277,10 @@
 
 <div class="leaderboard-container">
   {#if loading}
-    <div class="loading">Loading leaderboard...</div>
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading leaderboard...</p>
+    </div>
   {:else if error}
     <div class="error-message">{error}</div>
   {:else if leaderboardData}
@@ -750,10 +753,25 @@
 
   .loading {
     text-align: center;
-    padding: 3rem;
+    padding: 4rem 2rem;
     color: #aaa;
     font-family: 'Courier New', monospace;
     font-size: 1.2rem;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #666;
+    border-top: 4px solid #888;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
   .error-message {

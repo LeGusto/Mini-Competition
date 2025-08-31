@@ -164,7 +164,10 @@
   {/if}
 
   {#if loading}
-    <div class="loading">Loading contests...</div>
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading contests...</p>
+    </div>
   {:else if error}
     <div class="error-message">{error}</div>
   {:else if contests.length === 0}
@@ -270,9 +273,24 @@
 
   .loading {
     text-align: center;
-    padding: 2rem;
+    padding: 4rem 2rem;
     color: #aaa;
     font-family: 'Courier New', monospace;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #666;
+    border-top: 4px solid #888;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 
   .error-message {
