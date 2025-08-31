@@ -3,7 +3,8 @@
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
   import { contestService } from '$lib/services/contest';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
+  import { SubmissionForm, ProblemStatement, SubmissionStatus, ProblemMeta, SubmissionPoller } from '$lib';
 
   let contest: any = null;
   let problem: any = null;
@@ -11,14 +12,11 @@
   let loading = true;
   let error = '';
   let accessStatus: any = null;
+  let contestTimer: string = '';
+  let timerInterval: any = null;
 
-  // Submission form state
-  let selectedFile: File | null = null;
-  let selectedLanguage = 'cpp';
-  let submitting = false;
+  // Submission state
   let submissionResult: any = null;
-  let submissionError = '';
-  let submissionId: string | null = null;
   let polling = false;
 
   $: contestId = $page.params.contestId;
@@ -27,6 +25,12 @@
   onMount(async () => {
     if (contestId && problemId) {
       await loadContestAndProblem();
+    }
+  });
+
+  onDestroy(() => {
+    if (timerInterval) {
+      clearInterval(timerInterval);
     }
   });
 
@@ -66,6 +70,9 @@
             error = 'Problem not found in this contest';
             return;
           }
+
+          // Start contest timer
+          startContestTimer(contest);
         }
       } else if (accessStatus?.is_registered && accessStatus?.contest_status === 'upcoming') {
         // User is registered for upcoming contest
@@ -132,92 +139,26 @@
     }
   }
 
-  function handleFileSelect(event: Event) {
-    const target = event.target as HTMLInputElement;
-    if (target.files && target.files.length > 0) {
-      selectedFile = target.files[0];
-      submissionResult = null;
-      submissionError = '';
-    }
+  function handleSubmissionStart() {
+    submissionResult = null;
+    polling = false;
   }
 
-  async function submitSolution() {
-    if (!selectedFile) {
-      submissionError = 'Please select a file';
-      return;
-    }
-
-    try {
-      submitting = true;
-      submissionError = '';
-      submissionResult = null;
-
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('problem_id', problemId);
-      formData.append('language', selectedLanguage);
-
-      const response = await authService.authenticatedRequest(
-        'http://localhost:5000/submission/submit',
-        {
-          method: 'POST',
-          body: formData
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        submissionId = data.submission_id;
-        submissionResult = data;
-        
-        // Start polling for submission status
-        await pollSubmissionStatus();
-      } else {
-        const errorData = await response.json();
-        submissionError = errorData.message || 'Failed to submit solution';
-      }
-    } catch (err) {
-      submissionError = 'Failed to submit solution';
-      console.error('Error submitting solution:', err);
-    } finally {
-      submitting = false;
-    }
-  }
-
-  async function pollSubmissionStatus() {
-    if (!submissionId || polling) return;
-    
+  function handleSubmissionComplete(result: any) {
+    submissionResult = result;
     polling = true;
-    const maxAttempts = 30; // 30 attempts with 2 second intervals = 1 minute max
-    let attempts = 0;
+  }
 
-    const poll = async () => {
-      try {
-        const response = await authService.authenticatedRequest(
-          `http://localhost:5000/submission/status/${submissionId}`
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          submissionResult = { ...submissionResult, ...data };
-          
-          // Continue polling if status is still pending or judging
-          if ((data.status === 'pending' || data.status === 'judging') && attempts < maxAttempts) {
-            attempts++;
-            setTimeout(poll, 2000);
-          } else {
-            polling = false;
-          }
-        } else {
-          polling = false;
-        }
-      } catch (err) {
-        console.error('Error polling submission status:', err);
-        polling = false;
-      }
-    };
+  function handleSubmissionError(error: string) {
+    console.error('Submission error:', error);
+  }
 
-    setTimeout(poll, 2000);
+  function handleStatusUpdate(data: any) {
+    submissionResult = { ...submissionResult, ...data };
+  }
+
+  function handlePollingComplete() {
+    polling = false;
   }
 
   function getContestStatus(startTime: string, endTime: string) {
@@ -248,27 +189,75 @@
     }
   }
 
-  function downloadPDF() {
-    if (pdfUrl) {
-      const link = document.createElement('a');
-      link.href = pdfUrl;
-      link.download = `problem_${problemId}.pdf`;
-      link.click();
-    }
-  }
 
-  function openPDFInNewTab() {
-    if (pdfUrl) {
-      window.open(pdfUrl, '_blank');
-    }
-  }
 
   function goBackToContest() {
     goto(`/contest/${contestId}`);
   }
 
-  function goBackToContests() {
-    goto('/contests');
+  function startContestTimer(contest: any) {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+
+    const updateTimer = () => {
+      if (!contest) return;
+
+      const now = new Date();
+      let targetTime: Date | null = null;
+      let timerType = '';
+
+      // Handle timezone-aware format
+      let startTime: Date | null = null;
+      let endTime: Date | null = null;
+
+      if (contest.start_time && typeof contest.start_time === 'object' && contest.start_time.utc_iso) {
+        startTime = new Date(contest.start_time.utc_iso);
+        endTime = new Date(contest.end_time.utc_iso);
+      } else if (contest.start_time && contest.end_time) {
+        startTime = new Date(contest.start_time);
+        endTime = new Date(contest.end_time);
+      }
+
+      if (!startTime || !endTime) {
+        contestTimer = '';
+        return;
+      }
+
+      if (now < startTime) {
+        targetTime = startTime;
+        timerType = 'Starts in: ';
+      } else if (now >= startTime && now < endTime) {
+        targetTime = endTime;
+        timerType = 'Ends in: ';
+      } else {
+        contestTimer = 'Contest Ended';
+        return;
+      }
+
+      const timeDiff = targetTime.getTime() - now.getTime();
+
+      if (timeDiff <= 0) {
+        contestTimer = timerType === 'Starts in: ' ? 'Contest Starting...' : 'Contest Ended';
+        return;
+      }
+
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+      if (days > 0) {
+        contestTimer = `${timerType}${days}d ${hours}h ${minutes}m`;
+      } else if (hours > 0) {
+        contestTimer = `${timerType}${hours}h ${minutes}m ${seconds}s`;
+      } else {
+        contestTimer = `${timerType}${minutes}m ${seconds}s`;
+      }
+    };
+
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
   }
 </script>
 
@@ -306,69 +295,28 @@
       <button class="btn btn-secondary" on:click={goBackToContest}>
         Back to Contest
       </button>
-      <button class="btn btn-secondary" on:click={goBackToContests}>
-        Back to Contests
-      </button>
     </div>
   {:else if contest && problem}
     {@const contestStatus = getContestStatus(contest.start_time, contest.end_time)}
-    
-    <div class="header">
-      <div class="navigation">
-        <button class="btn btn-secondary" on:click={goBackToContest}>
-          ← Back to Contest
-        </button>
-        <button class="btn btn-secondary" on:click={goBackToContests}>
-          All Contests
-        </button>
-      </div>
-      
-      <div class="problem-info">
-        <h1>Problem {problemId}</h1>
-        <div class="contest-badge">
-          <span class="contest-name">{contest.name}</span>
-          <span class="status-badge {getStatusClass(contestStatus)}">
-            {getStatusText(contestStatus)}
-          </span>
+
+    <div class="navigation-above">
+      <button class="btn btn-secondary" on:click={goBackToContest}>
+        ← Back to Contest
+      </button>
+    </div>
+
+    <div class="problem-header">
+      <div class="header">
+        <div class="problem-info">
+          <h1>Problem {problemId}</h1>
+          {#if contestTimer}
+            <div class="contest-timer-display">{contestTimer}</div>
+          {/if}
         </div>
       </div>
     </div>
 
     <div class="content-layout">
-      <!-- Problem Statement Column -->
-      <div class="statement-column">
-        <div class="statement-card">
-          <div class="statement-header">
-            <h2>Problem Statement</h2>
-            <div class="statement-actions">
-              {#if pdfUrl}
-                <button class="btn btn-small btn-secondary" on:click={downloadPDF}>
-                  Download PDF
-                </button>
-                <button class="btn btn-small btn-secondary" on:click={openPDFInNewTab}>
-                  Open in New Tab
-                </button>
-              {/if}
-            </div>
-          </div>
-          
-          {#if pdfUrl}
-            <div class="pdf-container">
-              <iframe 
-                src={pdfUrl} 
-                title="Problem Statement"
-                width="100%" 
-                height="600"
-              ></iframe>
-            </div>
-          {:else}
-            <div class="no-statement">
-              Problem statement not available
-            </div>
-          {/if}
-        </div>
-      </div>
-
       <!-- Submission Column -->
       <div class="submission-column">
         <div class="submission-card">
@@ -384,99 +332,49 @@
             </div>
           {:else}
             <!-- Active contest - show submission form -->
-            <div class="problem-meta">
-              <div class="meta-item">
-                <span class="meta-label">Time Limit:</span>
-                <span class="meta-value">{problem.time_limit || 'N/A'}ms</span>
-              </div>
-              <div class="meta-item">
-                <span class="meta-label">Memory Limit:</span>
-                <span class="meta-value">{problem.memory_limit || 'N/A'}MB</span>
-              </div>
-            </div>
+            <ProblemMeta {problem} timeUnit="ms" />
 
-            <form on:submit|preventDefault={submitSolution} class="submission-form">
-              <div class="form-group">
-                <label for="language">Language:</label>
-                <select id="language" bind:value={selectedLanguage} required>
-                  <option value="cpp">C++</option>
-                  <option value="python">Python</option>
-                  <option value="java">Java</option>
-                </select>
-              </div>
+            <SubmissionForm
+              {problemId}
+              onSubmissionStart={handleSubmissionStart}
+              onSubmissionComplete={handleSubmissionComplete}
+              onSubmissionError={handleSubmissionError}
+            />
 
-              <div class="form-group">
-                <label for="file">Solution File:</label>
-                <input
-                  id="file"
-                  type="file"
-                  accept=".cpp,.py,.java,.c,.cc,.cxx"
-                  on:change={handleFileSelect}
-                  required
-                />
-                {#if selectedFile}
-                  <span class="file-info">Selected: {selectedFile.name}</span>
-                {/if}
-              </div>
-
-              <button type="submit" class="btn btn-primary submit-btn" disabled={submitting || !selectedFile}>
-                {submitting ? 'Submitting...' : 'Submit Solution'}
-              </button>
-            </form>
-
-            {#if submissionError}
-              <div class="error-message">{submissionError}</div>
-            {/if}
-
-            {#if submissionResult}
-              <div class="submission-status">
-                <h3>Submission Status</h3>
-                <div class="status-info">
-                  <div class="status-item">
-                    <span class="status-label">Submission ID:</span>
-                    <span class="status-value">{submissionResult.submission_id}</span>
-                  </div>
-                  <div class="status-item">
-                    <span class="status-label">Status:</span>
-                    <span class="status-value status-{submissionResult.status}">
-                      {submissionResult.status || 'pending'}
-                      {#if polling}(updating...){/if}
-                    </span>
-                  </div>
-                  {#if submissionResult.verdict}
-                    <div class="status-item">
-                      <span class="status-label">Verdict:</span>
-                      <span class="status-value verdict-{submissionResult.verdict}">
-                        {submissionResult.verdict}
-                      </span>
-                    </div>
-                  {/if}
-                  {#if submissionResult.score !== undefined}
-                    <div class="status-item">
-                      <span class="status-label">Score:</span>
-                      <span class="status-value">{submissionResult.score}%</span>
-                    </div>
-                  {/if}
-                </div>
-              </div>
-            {/if}
+            <SubmissionStatus {submissionResult} {polling} />
           {/if}
         </div>
       </div>
+
+      <!-- Problem Statement Column -->
+      <div class="statement-column">
+        <ProblemStatement {pdfUrl} {problemId} height={700} />
+      </div>
     </div>
+  {/if}
+
+  <!-- Polling component (invisible) -->
+  {#if submissionResult?.submission_id}
+    <SubmissionPoller
+      submissionId={submissionResult.submission_id}
+      bind:polling
+      onStatusUpdate={handleStatusUpdate}
+      onPollingComplete={handlePollingComplete}
+    />
   {/if}
 </div>
 
 <style>
   .contest-problem-container {
-    max-width: 1400px;
-    margin: 1rem auto;
+    max-width: 2000px;
+    margin: 2rem auto;
     padding: 0 1rem;
+    width: 95%;
   }
 
   .loading {
     text-align: center;
-    padding: 2rem;
+    padding: 1rem;
     color: #888;
     font-family: 'Courier New', monospace;
   }
@@ -495,7 +393,7 @@
     background: #3a3a3a;
     border: 1px solid #555;
     border-radius: 8px;
-    padding: 2rem;
+    padding: 1.5rem;
     margin: 1rem 0;
     text-align: center;
   }
@@ -524,15 +422,53 @@
     color: #ff6b6b;
   }
 
-  .header {
-    margin-bottom: 1.5rem;
-  }
-
-  .navigation {
+  .navigation-above {
     display: flex;
-    gap: 1rem;
+    justify-content: flex-start;
+    align-items: flex-start;
     margin-bottom: 1rem;
   }
+
+  .navigation-above .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.85rem;
+    width: auto !important;
+    flex-shrink: 0 !important;
+    min-width: auto !important;
+    max-width: fit-content !important;
+    display: inline-block !important;
+  }
+
+  .problem-header {
+    background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
+    border: 1px solid #555;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+  }
+
+  .problem-info {
+    flex: 1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .contest-timer-display {
+    font-size: 0.9rem;
+  }
+
+
 
   .navigation-buttons {
     display: flex;
@@ -542,83 +478,53 @@
 
   .problem-info h1 {
     font-family: 'Courier New', monospace;
-    color: #64b5f6;
-    margin: 0 0 0.5rem 0;
+    color: #f5f5f5;
+    margin: 0;
     font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
-  .contest-badge {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-  }
-
-  .contest-name {
-    color: #e0e0e0;
+  .contest-timer-display {
+    color: #ef5350;
     font-family: 'Courier New', monospace;
     font-size: 1rem;
-  }
-
-  .status-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
     font-weight: 600;
-    text-transform: uppercase;
-    font-family: 'Courier New', monospace;
+    background: #3a1a1a;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #f44336;
+    text-align: center;
+    height: fit-content;
   }
 
-  .status-upcoming { background: #2196f3; color: white; }
-  .status-active { background: #4caf50; color: white; }
-  .status-ended { background: #757575; color: white; }
+
+
+
 
   .content-layout {
     display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 1.5rem;
+    grid-template-columns: 320px 1fr;
+    gap: 2rem;
   }
 
   .statement-column {
     min-width: 0;
   }
 
-  .statement-card, .submission-card {
+  .submission-card {
     background: #1a1a1a;
     border: 1px solid #333;
     border-radius: 8px;
-    padding: 1.5rem;
+    padding: 1rem;
   }
 
-  .statement-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-
-  .statement-header h2, .submission-card h2 {
+  .submission-card h2 {
     font-family: 'Courier New', monospace;
-    color: #64b5f6;
+    color: #f5f5f5;
     margin: 0;
     font-size: 1.4rem;
-  }
-
-  .statement-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .pdf-container {
-    border: 1px solid #333;
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .no-statement {
-    text-align: center;
-    padding: 2rem;
-    color: #888;
-    font-family: 'Courier New', monospace;
+    font-weight: 600;
   }
 
   .contest-ended-notice, .contest-upcoming-notice {
@@ -630,124 +536,6 @@
     color: #ccc;
     font-family: 'Courier New', monospace;
   }
-
-  .problem-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: #2d2d2d;
-    border-radius: 4px;
-  }
-
-  .meta-item {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .meta-label {
-    color: #888;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
-  }
-
-  .meta-value {
-    color: #e0e0e0;
-    font-family: 'Courier New', monospace;
-    font-weight: 600;
-  }
-
-  .submission-form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .form-group label {
-    color: #e0e0e0;
-    font-family: 'Courier New', monospace;
-    font-weight: 500;
-  }
-
-  .form-group select, .form-group input {
-    padding: 0.75rem;
-    background: #2d2d2d;
-    border: 1px solid #444;
-    border-radius: 4px;
-    color: #e0e0e0;
-    font-family: 'Courier New', monospace;
-  }
-
-  .form-group select:focus, .form-group input:focus {
-    outline: none;
-    border-color: #64b5f6;
-    box-shadow: 0 0 0 2px rgba(100, 181, 246, 0.2);
-  }
-
-  .file-info {
-    color: #888;
-    font-size: 0.85rem;
-    font-family: 'Courier New', monospace;
-  }
-
-  .submit-btn {
-    margin-top: 0.5rem;
-  }
-
-  .submission-status {
-    margin-top: 1rem;
-    padding: 1rem;
-    background: #2d2d2d;
-    border-radius: 4px;
-  }
-
-  .submission-status h3 {
-    font-family: 'Courier New', monospace;
-    color: #64b5f6;
-    margin: 0 0 0.75rem 0;
-    font-size: 1.1rem;
-  }
-
-  .status-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .status-item {
-    display: flex;
-    justify-content: space-between;
-  }
-
-  .status-label {
-    color: #888;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
-  }
-
-  .status-value {
-    color: #e0e0e0;
-    font-family: 'Courier New', monospace;
-    font-weight: 600;
-  }
-
-  .status-pending { color: #ffa726; }
-  .status-judging { color: #42a5f5; }
-  .status-complete { color: #66bb6a; }
-  .status-error { color: #ef5350; }
-
-  .verdict-AC { color: #66bb6a; }
-  .verdict-WA { color: #ef5350; }
-  .verdict-TLE { color: #ff9800; }
-  .verdict-RTE { color: #e91e63; }
-  .verdict-CE { color: #9c27b0; }
 
   .btn {
     padding: 0.5rem 1rem;
@@ -766,18 +554,15 @@
     opacity: 0.6;
   }
 
-  .btn-small {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.85rem;
-  }
+
 
   .btn-primary {
-    background: #64b5f6;
-    color: #000;
+    background: #888;
+    color: #f5f5f5;
   }
 
   .btn-primary:hover:not(:disabled) {
-    background: #42a5f5;
+    background: #999;
   }
 
   .btn-secondary {
@@ -794,25 +579,44 @@
       grid-template-columns: 1fr;
     }
 
-    .submission-column {
+    .statement-column {
       order: -1;
     }
   }
 
   @media (max-width: 768px) {
-    .navigation {
-      flex-direction: column;
+    .navigation-above {
+      margin-bottom: 0.5rem;
     }
 
-    .contest-badge {
-      flex-direction: column;
-      align-items: flex-start;
+    .navigation-above .btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+      width: auto !important;
+      flex-shrink: 0 !important;
+      min-width: auto !important;
+      max-width: fit-content !important;
+      display: inline-block !important;
     }
 
-    .statement-header {
+    .problem-header {
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .header {
       flex-direction: column;
-      align-items: flex-start;
       gap: 0.5rem;
+      align-items: center;
+    }
+
+    .problem-info {
+      text-align: center;
+      gap: 0.25rem;
+    }
+
+    .contest-timer-display {
+      font-size: 0.8rem;
     }
   }
 </style>

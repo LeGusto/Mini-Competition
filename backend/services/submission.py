@@ -330,6 +330,42 @@ class SubmissionService:
             cursor.close()
             conn.close()
 
+    def get_all_active_contests_for_user_and_problem(self, user_id, problem_id):
+        """Get all active contests where the user is registered and the problem exists"""
+        conn = get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        try:
+            query = """
+                SELECT DISTINCT c.id, c.name, c.start_time, c.end_time, c.problems
+                FROM contests c
+                JOIN contest_participants cp ON c.id = cp.contest_id
+                WHERE cp.user_id = %s
+                AND c.problems @> %s::jsonb
+                AND c.start_time <= CURRENT_TIMESTAMP 
+                AND c.end_time >= CURRENT_TIMESTAMP
+                ORDER BY c.start_time DESC
+            """
+
+            cursor.execute(query, (user_id, f'["{problem_id}"]'))
+            contests = cursor.fetchall()
+
+            print(
+                f"🎯 Found {len(contests)} active contests for user {user_id} and problem {problem_id}"
+            )
+            for contest in contests:
+                print(f"   - {contest['name']} (ID: {contest['id']})")
+
+            return contests
+        except Exception as e:
+            print(
+                f"❌ Error getting active contests for user {user_id} and problem {problem_id}: {e}"
+            )
+            return []
+        finally:
+            cursor.close()
+            conn.close()
+
     def create_contest_submission(
         self,
         contest_id,

@@ -29,13 +29,14 @@ class AuthService:
         """
         return bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
-    def generate_token(self, user_id, username):
+    def generate_token(self, user_id, username, role="user"):
         """
         Generate a JWT token
         """
         payload = {
             "user_id": user_id,
             "username": username,
+            "role": role,
             "exp": datetime.datetime.now(datetime.timezone.utc)
             + datetime.timedelta(seconds=self.JWT_EXPIRATION),
             "iat": datetime.datetime.now(datetime.timezone.utc),
@@ -133,7 +134,7 @@ class AuthService:
         """
         user = self.get_user(username)
         if user and self.verify_password(password, user["password"].encode()):
-            return self.generate_token(user["id"], user["username"])
+            return self.generate_token(user["id"], user["username"], user["role"])
         else:
             raise Exception("Invalid username or password")
 
@@ -151,7 +152,7 @@ class AuthService:
         if not self.verify_password(password, user["password"]):
             raise Exception("Invalid username or password")
 
-        token = self.generate_token(user["id"], user["username"])
+        token = self.generate_token(user["id"], user["username"], user["role"])
 
         return {
             "message": "Login successful",
@@ -164,21 +165,24 @@ class AuthService:
             },
         }
 
-    def register_user(self, username, password):
+    def register_user(self, username, password, timezone=None):
         """
-        Complete registration flow - creates new user and returns user data
+        Complete registration flow - creates new user and returns user data with token
         """
         if not username or not password:
             raise Exception("Username and password are required")
 
         user = self.create_user(username, password)
+        token = self.generate_token(user["id"], user["username"], user["role"])
 
         return {
             "message": "User created successfully",
+            "token": token,
             "user": {
                 "id": user["id"],
                 "username": user["username"],
                 "role": user["role"],
+                "timezone": timezone,
             },
         }
 

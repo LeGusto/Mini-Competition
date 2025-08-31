@@ -71,3 +71,5 @@ def require_admin(f):
             return f(*args, **kwargs)
         except Exception as e:
             return jsonify({"message": str(e)}), 401
+
+    return decorated

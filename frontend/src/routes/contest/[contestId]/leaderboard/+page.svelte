@@ -1,13 +1,17 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { onMount, onDestroy } from 'svelte';
   import { authService } from '$lib/services/auth';
+  import { ContestTimer } from '$lib';
 
   let contestId = $page.params.contestId;
   let leaderboardData: any = null;
   let loading = true;
   let error = '';
   let refreshInterval: any = null;
+  let contestTimer: string = '';
+  let timerInterval: any = null;
 
   onMount(async () => {
     await loadLeaderboard();
@@ -18,10 +22,11 @@
     }, 30000);
   });
 
-  // Cleanup function for the interval
+  // Cleanup function for the intervals
   onMount(() => {
     return () => {
       if (refreshInterval) clearInterval(refreshInterval);
+      if (timerInterval) clearInterval(timerInterval);
     };
   });
 
@@ -33,6 +38,10 @@
       
       if (response.ok) {
         leaderboardData = await response.json();
+        // Start contest timer
+        if (leaderboardData?.contest) {
+          startContestTimer(leaderboardData.contest);
+        }
       } else {
         error = 'Failed to load leaderboard';
       }
@@ -162,24 +171,24 @@
   }
 
   function getGridColumns() {
+    if (!leaderboardData?.contest?.problems) return '80px 300px 100px';
+    const problemCount = leaderboardData.contest.problems.length;
+    const problemColumns = Array(problemCount).fill('100px').join(' ');
+    return `80px 300px 100px ${problemColumns}`;
+  }
+
+  function getGridColumnsTablet() {
     if (!leaderboardData?.contest?.problems) return '60px 200px 80px';
     const problemCount = leaderboardData.contest.problems.length;
     const problemColumns = Array(problemCount).fill('80px').join(' ');
     return `60px 200px 80px ${problemColumns}`;
   }
 
-  function getGridColumnsTablet() {
+  function getGridColumnsMobile() {
     if (!leaderboardData?.contest?.problems) return '50px 150px 70px';
     const problemCount = leaderboardData.contest.problems.length;
     const problemColumns = Array(problemCount).fill('70px').join(' ');
     return `50px 150px 70px ${problemColumns}`;
-  }
-
-  function getGridColumnsMobile() {
-    if (!leaderboardData?.contest?.problems) return '40px 120px 60px';
-    const problemCount = leaderboardData.contest.problems.length;
-    const problemColumns = Array(problemCount).fill('60px').join(' ');
-    return `40px 120px 60px ${problemColumns}`;
   }
 
   function formatAttempts(count: number) {
@@ -187,13 +196,82 @@
     return `${count} tries`;
   }
 
-  function isFirstBlood(userId: number, problemId: string) {
+    function isFirstBlood(userId: number, problemId: string) {
     // Check if this user got first blood on this problem
     const userEntry = leaderboardData?.leaderboard?.find((entry: any) => entry.user_id === userId);
     if (!userEntry || !userEntry.problem_statuses) return false;
-    
+
     const problemStatus = userEntry.problem_statuses[problemId];
     return problemStatus ? (problemStatus.is_first_blood || false) : false;
+  }
+
+  function startContestTimer(contest: any) {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+
+    const updateTimer = () => {
+      if (!contest) return;
+
+      const now = new Date();
+      let targetTime: Date | null = null;
+      let timerType = '';
+
+      // Handle timezone-aware format
+      let startTime: Date | null = null;
+      let endTime: Date | null = null;
+
+      if (contest.start_time && typeof contest.start_time === 'object' && contest.start_time.utc_iso) {
+        startTime = new Date(contest.start_time.utc_iso);
+        endTime = new Date(contest.end_time.utc_iso);
+      } else if (contest.start_time && contest.end_time) {
+        startTime = new Date(contest.start_time);
+        endTime = new Date(contest.end_time);
+      }
+
+      if (!startTime || !endTime) {
+        contestTimer = '';
+        return;
+      }
+
+      if (now < startTime) {
+        targetTime = startTime;
+        timerType = 'Starts in: ';
+      } else if (now >= startTime && now < endTime) {
+        targetTime = endTime;
+        timerType = 'Ends in: ';
+      } else {
+        contestTimer = 'Contest Ended';
+        return;
+      }
+
+      const timeDiff = targetTime.getTime() - now.getTime();
+
+      if (timeDiff <= 0) {
+        contestTimer = timerType === 'Starts in: ' ? 'Contest Starting...' : 'Contest Ended';
+        return;
+      }
+
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+      if (days > 0) {
+        contestTimer = `${timerType}${days}d ${hours}h ${minutes}m`;
+      } else if (hours > 0) {
+        contestTimer = `${timerType}${hours}h ${minutes}m ${seconds}s`;
+      } else {
+        contestTimer = `${timerType}${minutes}m ${seconds}s`;
+      }
+    };
+
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+
+  function goBack() {
+    goto(`/contest/${contestId}`);
   }
 </script>
 
@@ -203,17 +281,20 @@
   {:else if error}
     <div class="error-message">{error}</div>
   {:else if leaderboardData}
+
+    <div class="navigation-above">
+      <button class="btn btn-secondary" on:click={goBack}>
+        ← Back to Contest
+      </button>
+    </div>
+
     <div class="contest-header">
-      <h1>{leaderboardData.contest.name}</h1>
-      <div class="contest-info">
-        <div class="contest-status">
-          <span class="status-badge {getStatusClass(getContestStatus())}">
-            {getStatusText(getContestStatus())}
-          </span>
-        </div>
-        <div class="contest-times">
-          <div>Start: {formatDateTime(leaderboardData.contest.start_time)}</div>
-          <div>End: {formatDateTime(leaderboardData.contest.end_time)}</div>
+      <div class="header">
+        <div class="problem-info">
+          <h1>{leaderboardData.contest.name} - Leaderboard</h1>
+          {#if contestTimer}
+            <ContestTimer timerText={contestTimer} />
+          {/if}
         </div>
       </div>
     </div>
@@ -315,17 +396,60 @@
 
 <style>
   .leaderboard-container {
-    max-width: 1400px;
+    max-width: 2000px;
     margin: 2rem auto;
     padding: 0 1rem;
+    width: 95%;
+  }
+
+  .navigation-above {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+  }
+
+  .navigation-above .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.85rem;
+    width: auto !important;
+    flex-shrink: 0 !important;
+    min-width: auto !important;
+    max-width: fit-content !important;
+    display: inline-block !important;
   }
 
   .contest-header {
-    background: #3a3a3a;
+    background: linear-gradient(135deg, #2a2a2a 0%, #3a3a3a 100%);
     border: 1px solid #555;
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 2rem;
     margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60px;
+  }
+
+  .problem-info {
+    flex: 1;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .problem-info h1 {
+    font-family: 'Courier New', monospace;
+    color: #f5f5f5;
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.2;
   }
 
   h1 {
@@ -356,6 +480,21 @@
 
   .contest-times div {
     margin-bottom: 0.5rem;
+  }
+
+  .contest-timer-display {
+    color: #ef5350;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    background: #3a1a1a;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #f44336;
+    text-align: center;
+    height: fit-content;
+    flex-shrink: 0;
+    margin-left: auto;
   }
 
   .status-badge {
@@ -406,7 +545,7 @@
     background: #4a4a4a;
     color: #f5f5f5;
     font-weight: 600;
-    padding: 0.75rem 0.5rem;
+    padding: 1rem 0.75rem;
     text-align: center;
     font-size: 0.9rem;
     border: 1px solid #555;
@@ -419,7 +558,7 @@
   .grid-row > div {
     background: #3a3a3a;
     border: 1px solid #555;
-    padding: 0.75rem 0.5rem;
+    padding: 1rem 0.75rem;
     color: #cccccc;
   }
 
@@ -600,6 +739,15 @@
     background: #777;
   }
 
+  .back-btn {
+    flex-shrink: 0;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    width: auto !important;
+    max-width: max-content !important;
+    min-width: auto !important;
+  }
+
   .loading {
     text-align: center;
     padding: 3rem;
@@ -632,15 +780,67 @@
     }
   }
 
+  /* Extra wide desktop styles */
+  @media (min-width: 1600px) {
+    .leaderboard-container {
+      max-width: 2200px;
+    }
+
+    .grid-header > div,
+    .grid-row > div {
+      padding: 1.25rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    .team-name {
+      font-size: 1rem;
+    }
+
+    .team-meta {
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .leaderboard-grid[style*="grid-template-columns"] {
+      grid-template-columns: var(--grid-columns-tablet) !important;
+    }
+
+    .team-name {
+      font-size: 0.85rem;
+    }
+
+    .team-meta {
+      font-size: 0.75rem;
+    }
+  }
+
   @media (max-width: 768px) {
     .leaderboard-grid[style*="grid-template-columns"] {
       grid-template-columns: var(--grid-columns-mobile) !important;
       gap: 0;
     }
     
-    .contest-info {
+    .contest-header {
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .header {
       flex-direction: column;
       gap: 1rem;
+      align-items: flex-start;
+    }
+
+
+
+    .problem-info {
+      text-align: left;
+    }
+
+    .contest-timer-display {
+      margin-left: 0;
+      margin-top: 0.5rem;
     }
 
     .legend-items {
@@ -655,6 +855,15 @@
     .grid-header > div,
     .grid-row > div {
       padding: 0.5rem 0.25rem;
+      font-size: 0.8rem;
+    }
+
+    .back-btn {
+      width: auto !important;
+    }
+
+    .navigation-above .btn {
+      padding: 0.25rem 0.5rem;
       font-size: 0.8rem;
     }
   }
