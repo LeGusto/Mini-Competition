@@ -297,6 +297,24 @@ class ContestService:
                 ),
             )
 
+            # Get first blood information for each problem
+            first_blood = {}
+            for problem_id in contest["problems"]:
+                cursor.execute(
+                    """
+                    SELECT user_id, MIN(submission_time) as first_solve_time
+                    FROM contest_submissions 
+                    WHERE contest_id = %s AND problem_id = %s AND is_accepted = TRUE
+                    GROUP BY user_id
+                    ORDER BY first_solve_time ASC
+                    LIMIT 1
+                    """,
+                    (contest_id, problem_id),
+                )
+                first_solver = cursor.fetchone()
+                if first_solver:
+                    first_blood[problem_id] = first_solver["user_id"]
+
             # Convert to list of dictionaries and add problem status for each user
             result = []
             for i, entry in enumerate(leaderboard):
@@ -334,12 +352,14 @@ class ContestService:
                                 "status": "pending",
                                 "attempts": 0,
                                 "solve_time": None,
+                                "is_first_blood": False,
                             }
                         else:
                             problem_statuses[problem_id] = {
                                 "status": "untried",
                                 "attempts": 0,
                                 "solve_time": None,
+                                "is_first_blood": False,
                             }
                     else:
                         # Check if any submission was accepted
@@ -378,6 +398,7 @@ class ContestService:
                                 "attempts": len(submissions),
                                 "penalty_attempts": penalty_attempts,
                                 "solve_time": solve_minutes,
+                                "is_first_blood": first_blood.get(problem_id) == user_id,
                             }
                         else:
                             # Check if there are any pending submissions from main submissions table
@@ -396,12 +417,14 @@ class ContestService:
                                     "status": "pending",
                                     "attempts": len(submissions),
                                     "solve_time": None,
+                                    "is_first_blood": False,
                                 }
                             else:
                                 problem_statuses[problem_id] = {
                                     "status": "attempted",
                                     "attempts": len(submissions),
                                     "solve_time": None,
+                                    "is_first_blood": False,
                                 }
 
                 result.append(

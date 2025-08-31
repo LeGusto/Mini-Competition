@@ -186,6 +186,15 @@
     if (count === 1) return '1 try';
     return `${count} tries`;
   }
+
+  function isFirstBlood(userId: number, problemId: string) {
+    // Check if this user got first blood on this problem
+    const userEntry = leaderboardData?.leaderboard?.find((entry: any) => entry.user_id === userId);
+    if (!userEntry || !userEntry.problem_statuses) return false;
+    
+    const problemStatus = userEntry.problem_statuses[problemId];
+    return problemStatus ? (problemStatus.is_first_blood || false) : false;
+  }
 </script>
 
 <div class="leaderboard-container">
@@ -245,7 +254,8 @@
                 {@const attempts = getProblemAttempts(entry.user_id, problemId)}
                 {@const penaltyAttempts = getProblemPenaltyAttempts(entry.user_id, problemId)}
                 {@const solveTime = getProblemTime(entry.user_id, problemId)}
-                <div class="problem-cell problem-{status}">
+                {@const firstBlood = isFirstBlood(entry.user_id, problemId)}
+                <div class="problem-cell problem-{status} {firstBlood ? 'first-blood' : ''}">
                   {#if status === 'solved'}
                     <div class="solve-time">{solveTime}</div>
                     {#if penaltyAttempts > 0}
@@ -451,6 +461,13 @@
   .problem-solved {
     background: #4caf50 !important;
     color: #fff !important;
+  }
+
+  .problem-solved.first-blood {
+    background: #2e7d32 !important;
+    color: #fff !important;
+    border: 2px solid #1b5e20 !important;
+    font-weight: 600 !important;
   }
 
   .problem-attempted {
