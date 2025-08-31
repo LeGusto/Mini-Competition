@@ -70,7 +70,8 @@
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            second: '2-digit'
+            second: '2-digit',
+            timeZoneName: 'short'
         });
     }
 
@@ -255,6 +256,8 @@
         cursor: pointer;
         font-size: 1rem;
         font-family: 'Courier New', monospace;
+        white-space: nowrap;
+        max-width: fit-content;
     }
 
     .submissions-refresh-btn:hover:not(:disabled) {

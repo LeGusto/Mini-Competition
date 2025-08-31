@@ -127,15 +127,52 @@
     }
   }
 
-  function formatDateTime(isoString: string) {
-    const date = new Date(isoString);
-    return date.toLocaleString();
+  function formatDateTime(timeData: any) {
+    if (!timeData) return 'N/A';
+    
+    // Handle new timezone-aware format
+    if (typeof timeData === 'object' && timeData.utc_iso) {
+      // Convert UTC time to user's local timezone
+      const date = new Date(timeData.utc_iso);
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+    }
+    
+    // Fallback for old format (simple ISO string)
+    if (typeof timeData === 'string') {
+      const date = new Date(timeData);
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+    }
+    
+    return 'Invalid date';
   }
 
-  function getContestStatus(startTime: string, endTime: string) {
+  function getContestStatus(startTime: any, endTime: any) {
     const now = new Date();
-    const start = new Date(startTime);
-    const end = new Date(endTime);
+    
+    // Handle new timezone-aware format
+    let start, end;
+    if (typeof startTime === 'object' && startTime.utc_iso) {
+      start = new Date(startTime.utc_iso);
+      end = new Date(endTime.utc_iso);
+    } else {
+      // Fallback for old format
+      start = new Date(startTime);
+      end = new Date(endTime);
+    }
 
     if (now < start) return 'upcoming';
     if (now > end) return 'ended';
@@ -239,6 +276,15 @@
               {#if registrationData}
                 <p class="registration-time">Registered on: {formatDateTime(registrationData.registered_at)}</p>
               {/if}
+            </div>
+          </div>
+        {:else if accessStatus.is_registered && accessStatus.contest_status === 'active'}
+          <!-- User is registered for active contest but still can't access - this should not happen -->
+          <div class="access-control-card restricted-card">
+            <h2>Access Issue</h2>
+            <div class="access-message">
+              <p>There seems to be an issue with contest access. Please contact support.</p>
+              <p>Reason: {accessStatus.reason}</p>
             </div>
           </div>
         {:else if !accessStatus.is_registered && accessStatus.can_register}

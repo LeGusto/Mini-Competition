@@ -50,10 +50,33 @@
     if (!timeData) return 'N/A';
     
     // Handle new timezone-aware format
-    if (typeof timeData === 'object' && timeData.formatted) {
-      return `${timeData.formatted} ${timeData.timezone}`;
+    if (typeof timeData === 'object' && timeData.utc_iso) {
+      // Convert UTC time to user's local timezone
+      const date = new Date(timeData.utc_iso);
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
     }
-  
+    
+    // Fallback for old format (simple ISO string)
+    if (typeof timeData === 'string') {
+      const date = new Date(timeData);
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+    }
+    
+    return 'Invalid date';
   }
 
   function getContestStatus(startTime: any, endTime: any) {
@@ -341,6 +364,8 @@
     transition: all 0.2s ease;
     text-decoration: none;
     display: inline-block;
+    white-space: nowrap;
+    max-width: fit-content;
   }
 
   .btn-small {

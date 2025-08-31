@@ -477,6 +477,12 @@ class ContestService:
             start_time = contest["start_time"]
             end_time = contest["end_time"]
 
+            # Ensure start_time and end_time are timezone-aware
+            if start_time.tzinfo is None:
+                start_time = start_time.replace(tzinfo=timezone.utc)
+            if end_time.tzinfo is None:
+                end_time = end_time.replace(tzinfo=timezone.utc)
+
             if now < start_time:
                 contest_status = "upcoming"
             elif now > end_time:
