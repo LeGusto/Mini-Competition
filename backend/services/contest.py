@@ -17,6 +17,8 @@ class ContestService:
         judge_host = os.getenv("JUDGE_HOST", "mini-judge")
         judge_port = os.getenv("JUDGE_PORT", "3000")
         self.judge_base_url = f"http://{judge_host}:{judge_port}"
+        # Initialize with UTC timezone by default
+        self.local_timezone = pytz.timezone("UTC")
 
     def set_timezone(self, timezone_name):
         """Set the timezone for time conversions"""
@@ -212,53 +214,219 @@ class ContestService:
             if not contest:
                 return None
 
-            # Check if there are any contest submissions
-            cursor.execute(
-                "SELECT COUNT(*) as count FROM contest_submissions WHERE contest_id = %s",
-                (contest_id,),
-            )
-            submission_count = cursor.fetchone()["count"]
-
-            if submission_count == 0:
-                # No submissions yet, return empty leaderboard
-                return {
-                    "contest": {
-                        "id": contest["id"],
-                        "name": contest["name"],
-                        "start_time": self.convert_to_local_time(contest["start_time"]),
-                        "end_time": self.convert_to_local_time(contest["end_time"]),
-                        "problems": contest["problems"],
-                    },
-                    "leaderboard": [],
-                    "message": "No submissions yet for this contest",
-                }
-
-            # Get leaderboard data
+            # Get leaderboard data for ALL registered users (including those with no submissions)
             cursor.execute(
                 """
                 SELECT 
                     u.id as user_id,
                     u.username,
-                    COUNT(DISTINCT cs.problem_id) as problems_solved,
-                    SUM(cs.score) as total_score,
-                    SUM(cs.penalty_time) as total_penalty,
-                    MIN(cs.submission_time) as first_solve_time
+                    COUNT(DISTINCT CASE WHEN cs.is_accepted = TRUE THEN cs.problem_id END) as problems_solved,
+                    COALESCE(SUM(CASE WHEN cs.is_accepted = TRUE THEN cs.score END), 0) as total_score,
+                    0 as total_penalty,  -- Will calculate penalty properly below
+                    MIN(CASE WHEN cs.is_accepted = TRUE THEN cs.submission_time END) as first_solve_time
                 FROM users u
-                LEFT JOIN contest_submissions cs ON u.id = cs.user_id AND cs.contest_id = %s AND cs.is_accepted = TRUE
-                WHERE u.id IN (
-                    SELECT DISTINCT user_id FROM contest_submissions WHERE contest_id = %s
-                )
+                INNER JOIN contest_participants cp ON u.id = cp.user_id AND cp.contest_id = %s
+                LEFT JOIN contest_submissions cs ON u.id = cs.user_id AND cs.contest_id = %s
                 GROUP BY u.id, u.username
-                ORDER BY problems_solved DESC, total_score DESC, total_penalty ASC, first_solve_time ASC
+                ORDER BY problems_solved DESC, total_score DESC, first_solve_time ASC
             """,
                 (contest_id, contest_id),
             )
 
             leaderboard = cursor.fetchall()
 
-            # Convert to list of dictionaries
+            # Calculate penalty times properly for each user
+            for entry in leaderboard:
+                user_id = entry["user_id"]
+                total_penalty = 0
+
+                # Get problems that this user eventually solved
+                cursor.execute(
+                    """
+                    SELECT DISTINCT problem_id 
+                    FROM contest_submissions 
+                    WHERE contest_id = %s AND user_id = %s AND is_accepted = TRUE
+                    """,
+                    (contest_id, user_id),
+                )
+                solved_problems = [row["problem_id"] for row in cursor.fetchall()]
+
+                # For each solved problem, count wrong submissions before the accepted one
+                for problem_id in solved_problems:
+                    cursor.execute(
+                        """
+                        SELECT COUNT(*) as wrong_attempts
+                        FROM contest_submissions cs1
+                        WHERE cs1.contest_id = %s 
+                        AND cs1.user_id = %s 
+                        AND cs1.problem_id = %s
+                        AND cs1.is_accepted = FALSE
+                        AND cs1.submission_time < (
+                            SELECT MIN(cs2.submission_time)
+                            FROM contest_submissions cs2
+                            WHERE cs2.contest_id = %s 
+                            AND cs2.user_id = %s 
+                            AND cs2.problem_id = %s
+                            AND cs2.is_accepted = TRUE
+                        )
+                        """,
+                        (
+                            contest_id,
+                            user_id,
+                            problem_id,
+                            contest_id,
+                            user_id,
+                            problem_id,
+                        ),
+                    )
+                    wrong_attempts = cursor.fetchone()["wrong_attempts"]
+                    total_penalty += (
+                        wrong_attempts * 20
+                    )  # 20 minutes penalty per wrong attempt
+
+                # Update the entry with calculated penalty
+                entry["total_penalty"] = total_penalty
+
+            # Sort leaderboard properly: by problems solved (desc), then by penalty (asc), then by first solve time (asc)
+            leaderboard = sorted(
+                leaderboard,
+                key=lambda x: (
+                    -x["problems_solved"],
+                    x["total_penalty"],
+                    x["first_solve_time"] or datetime.max.replace(tzinfo=timezone.utc),
+                ),
+            )
+
+            # Get first blood information for each problem
+            first_blood = {}
+            for problem_id in contest["problems"]:
+                cursor.execute(
+                    """
+                    SELECT user_id, MIN(submission_time) as first_solve_time
+                    FROM contest_submissions 
+                    WHERE contest_id = %s AND problem_id = %s AND is_accepted = TRUE
+                    GROUP BY user_id
+                    ORDER BY first_solve_time ASC
+                    LIMIT 1
+                    """,
+                    (contest_id, problem_id),
+                )
+                first_solver = cursor.fetchone()
+                if first_solver:
+                    first_blood[problem_id] = first_solver["user_id"]
+
+            # Convert to list of dictionaries and add problem status for each user
             result = []
             for i, entry in enumerate(leaderboard):
+                user_id = entry["user_id"]
+
+                # Get problem status for each problem in the contest
+                problem_statuses = {}
+                for problem_id in contest["problems"]:
+                    # Get all submissions for this user-problem combination
+                    cursor.execute(
+                        """
+                        SELECT is_accepted, submission_time 
+                        FROM contest_submissions 
+                        WHERE contest_id = %s AND user_id = %s AND problem_id = %s 
+                        ORDER BY submission_time ASC
+                        """,
+                        (contest_id, user_id, problem_id),
+                    )
+                    submissions = cursor.fetchall()
+
+                    if not submissions:
+                        # Check if there are any pending submissions from main submissions table
+                        cursor.execute(
+                            """
+                            SELECT status FROM submissions 
+                            WHERE user_id = %s AND problem_id = %s AND status = 'pending'
+                            ORDER BY submission_time DESC LIMIT 1
+                            """,
+                            (user_id, problem_id),
+                        )
+                        pending_submission = cursor.fetchone()
+
+                        if pending_submission:
+                            problem_statuses[problem_id] = {
+                                "status": "pending",
+                                "attempts": 0,
+                                "solve_time": None,
+                                "is_first_blood": False,
+                            }
+                        else:
+                            problem_statuses[problem_id] = {
+                                "status": "untried",
+                                "attempts": 0,
+                                "solve_time": None,
+                                "is_first_blood": False,
+                            }
+                    else:
+                        # Check if any submission was accepted
+                        accepted_submission = next(
+                            (s for s in submissions if s["is_accepted"]), None
+                        )
+
+                        if accepted_submission:
+                            # Calculate solve time from contest start
+                            contest_start = contest["start_time"]
+                            if contest_start.tzinfo is None:
+                                contest_start = contest_start.replace(
+                                    tzinfo=timezone.utc
+                                )
+
+                            solve_time = accepted_submission["submission_time"]
+                            if solve_time.tzinfo is None:
+                                solve_time = solve_time.replace(tzinfo=timezone.utc)
+
+                            solve_minutes = int(
+                                (solve_time - contest_start).total_seconds() / 60
+                            )
+
+                            # Count penalty attempts (wrong attempts before first accepted)
+                            penalty_attempts = 0
+                            for sub in submissions:
+                                if (
+                                    not sub["is_accepted"]
+                                    and sub["submission_time"]
+                                    < accepted_submission["submission_time"]
+                                ):
+                                    penalty_attempts += 1
+
+                            problem_statuses[problem_id] = {
+                                "status": "solved",
+                                "attempts": len(submissions),
+                                "penalty_attempts": penalty_attempts,
+                                "solve_time": solve_minutes,
+                                "is_first_blood": first_blood.get(problem_id) == user_id,
+                            }
+                        else:
+                            # Check if there are any pending submissions from main submissions table
+                            cursor.execute(
+                                """
+                                SELECT status FROM submissions 
+                                WHERE user_id = %s AND problem_id = %s AND status = 'pending'
+                                ORDER BY submission_time DESC LIMIT 1
+                                """,
+                                (user_id, problem_id),
+                            )
+                            pending_submission = cursor.fetchone()
+
+                            if pending_submission:
+                                problem_statuses[problem_id] = {
+                                    "status": "pending",
+                                    "attempts": len(submissions),
+                                    "solve_time": None,
+                                    "is_first_blood": False,
+                                }
+                            else:
+                                problem_statuses[problem_id] = {
+                                    "status": "attempted",
+                                    "attempts": len(submissions),
+                                    "solve_time": None,
+                                    "is_first_blood": False,
+                                }
+
                 result.append(
                     {
                         "rank": i + 1,
@@ -272,6 +440,7 @@ class ContestService:
                             if entry["first_solve_time"]
                             else None
                         ),
+                        "problem_statuses": problem_statuses,
                     }
                 )
 

@@ -109,13 +109,14 @@ def receive_judge_result():
                     score = 0
                     penalty_time = 0
 
-                    if status == "completed" and judge_response:
+                    if status in ["completed", "accepted"] and judge_response:
                         # Check if all test cases passed
                         summary = judge_response.get("summary", {})
                         failed = summary.get("failed", 0)
                         is_accepted = failed == 0
 
                         if is_accepted:
+                            score = 100  # Standard score for accepted submissions
                             print(f"✅ Submission accepted with score {score}")
                         else:
                             # Calculate penalty time (you can adjust this logic)

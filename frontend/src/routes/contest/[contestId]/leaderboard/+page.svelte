@@ -5,14 +5,12 @@
 
   let contestId = $page.params.contestId;
   let leaderboardData: any = null;
-  let userSubmissions: any[] = [];
   let loading = true;
   let error = '';
   let refreshInterval: any = null;
 
   onMount(async () => {
     await loadLeaderboard();
-    await loadUserSubmissions();
     
     // Auto-refresh every 30 seconds for live updates
     refreshInterval = setInterval(async () => {
@@ -46,29 +44,39 @@
     }
   }
 
-  async function loadUserSubmissions() {
-    try {
-      const response = await authService.authenticatedRequest(
-        `http://localhost:5000/contest/${contestId}/submissions`
-      );
-      
-      if (response.ok) {
-        userSubmissions = await response.json();
-      }
-    } catch (err) {
-      console.error('Error loading user submissions:', err);
-    }
-  }
+
 
   function formatDateTime(timeData: any) {
     if (!timeData) return 'N/A';
     
-    if (typeof timeData === 'object' && timeData.formatted) {
-      return `${timeData.formatted} ${timeData.timezone}`;
+    // Handle new timezone-aware format
+    if (typeof timeData === 'object' && timeData.utc_iso) {
+      // Convert UTC time to user's local timezone
+      const date = new Date(timeData.utc_iso);
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
     }
     
-    const date = new Date(timeData);
-    return date.toLocaleString();
+    // Fallback for old format (simple ISO string)
+    if (typeof timeData === 'string') {
+      const date = new Date(timeData);
+      return date.toLocaleString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short'
+      });
+    }
+    
+    return 'Invalid date';
   }
 
   function getContestStatus() {
@@ -102,7 +110,7 @@
   }
 
   function formatPenalty(penaltyMinutes: number) {
-    if (penaltyMinutes === 0) return '0m';
+    if (penaltyMinutes === 0) return '';
     return `${penaltyMinutes}m`;
   }
 
@@ -111,6 +119,81 @@
     if (rank === 2) return 'rank-silver';
     if (rank === 3) return 'rank-bronze';
     return '';
+  }
+
+  function getProblemLabel(index: number) {
+    return String.fromCharCode(65 + index); // A, B, C, D, etc.
+  }
+
+  function getProblemStatus(userId: number, problemId: string) {
+    // Get status from leaderboard data
+    const userEntry = leaderboardData?.leaderboard?.find((entry: any) => entry.user_id === userId);
+    if (!userEntry || !userEntry.problem_statuses) return 'untried';
+    
+    const problemStatus = userEntry.problem_statuses[problemId];
+    return problemStatus ? problemStatus.status : 'untried';
+  }
+
+  function getProblemAttempts(userId: number, problemId: string) {
+    // Get attempts from leaderboard data
+    const userEntry = leaderboardData?.leaderboard?.find((entry: any) => entry.user_id === userId);
+    if (!userEntry || !userEntry.problem_statuses) return 0;
+    
+    const problemStatus = userEntry.problem_statuses[problemId];
+    return problemStatus ? problemStatus.attempts : 0;
+  }
+
+  function getProblemPenaltyAttempts(userId: number, problemId: string) {
+    // Get penalty attempts (wrong attempts before acceptance) from leaderboard data
+    const userEntry = leaderboardData?.leaderboard?.find((entry: any) => entry.user_id === userId);
+    if (!userEntry || !userEntry.problem_statuses) return 0;
+    
+    const problemStatus = userEntry.problem_statuses[problemId];
+    return problemStatus ? (problemStatus.penalty_attempts || 0) : 0;
+  }
+
+  function getProblemTime(userId: number, problemId: string) {
+    // Get solve time from leaderboard data
+    const userEntry = leaderboardData?.leaderboard?.find((entry: any) => entry.user_id === userId);
+    if (!userEntry || !userEntry.problem_statuses) return null;
+    
+    const problemStatus = userEntry.problem_statuses[problemId];
+    return problemStatus ? problemStatus.solve_time : null;
+  }
+
+  function getGridColumns() {
+    if (!leaderboardData?.contest?.problems) return '60px 200px 80px';
+    const problemCount = leaderboardData.contest.problems.length;
+    const problemColumns = Array(problemCount).fill('80px').join(' ');
+    return `60px 200px 80px ${problemColumns}`;
+  }
+
+  function getGridColumnsTablet() {
+    if (!leaderboardData?.contest?.problems) return '50px 150px 70px';
+    const problemCount = leaderboardData.contest.problems.length;
+    const problemColumns = Array(problemCount).fill('70px').join(' ');
+    return `50px 150px 70px ${problemColumns}`;
+  }
+
+  function getGridColumnsMobile() {
+    if (!leaderboardData?.contest?.problems) return '40px 120px 60px';
+    const problemCount = leaderboardData.contest.problems.length;
+    const problemColumns = Array(problemCount).fill('60px').join(' ');
+    return `40px 120px 60px ${problemColumns}`;
+  }
+
+  function formatAttempts(count: number) {
+    if (count === 1) return '1 try';
+    return `${count} tries`;
+  }
+
+  function isFirstBlood(userId: number, problemId: string) {
+    // Check if this user got first blood on this problem
+    const userEntry = leaderboardData?.leaderboard?.find((entry: any) => entry.user_id === userId);
+    if (!userEntry || !userEntry.problem_statuses) return false;
+    
+    const problemStatus = userEntry.problem_statuses[problemId];
+    return problemStatus ? (problemStatus.is_first_blood || false) : false;
   }
 </script>
 
@@ -121,7 +204,7 @@
     <div class="error-message">{error}</div>
   {:else if leaderboardData}
     <div class="contest-header">
-      <h1>{leaderboardData.contest.name} - Leaderboard</h1>
+      <h1>{leaderboardData.contest.name}</h1>
       <div class="contest-info">
         <div class="contest-status">
           <span class="status-badge {getStatusClass(getContestStatus())}">
@@ -132,73 +215,94 @@
           <div>Start: {formatDateTime(leaderboardData.contest.start_time)}</div>
           <div>End: {formatDateTime(leaderboardData.contest.end_time)}</div>
         </div>
-        <div class="contest-problems">
-          {leaderboardData.contest.problems ? leaderboardData.contest.problems.length : 0} problems
-        </div>
       </div>
     </div>
 
-    <div class="leaderboard-content">
-      <div class="leaderboard-table">
-        <h2>Rankings</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Rank</th>
-              <th>User</th>
-              <th>Solved</th>
-              <th>Score</th>
-              <th>Penalty</th>
-              <th>First Solve</th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each leaderboardData.leaderboard as entry}
-              <tr class="{getRankClass(entry.rank)}">
-                <td class="rank">{entry.rank}</td>
-                <td class="username">{entry.username}</td>
-                <td class="solved">{entry.problems_solved}</td>
-                <td class="score">{entry.total_score}</td>
-                <td class="penalty">{formatPenalty(entry.total_penalty)}</td>
-                <td class="first-solve">
-                  {entry.first_solve_time ? formatDateTime(entry.first_solve_time) : 'N/A'}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+    <div class="leaderboard-wrapper">
+      <div class="leaderboard-grid" style="grid-template-columns: {getGridColumns()}; --grid-columns-tablet: {getGridColumnsTablet()}; --grid-columns-mobile: {getGridColumnsMobile()}">
+        <!-- Header Row -->
+        <div class="grid-header">
+          <div class="rank-header">RANK</div>
+          <div class="team-header">TEAM</div>
+          <div class="score-header">SCORE</div>
+          {#each leaderboardData.contest.problems || [] as problemId, index}
+            <div class="problem-header">
+              {getProblemLabel(index)}
+            </div>
+          {/each}
+        </div>
 
-      <div class="user-submissions">
-        <h2>Your Submissions</h2>
-        {#if userSubmissions.length === 0}
-          <p class="no-submissions">No submissions yet for this contest.</p>
-        {:else}
-          <div class="submissions-list">
-            {#each userSubmissions as submission}
-              <div class="submission-item {submission.is_accepted ? 'accepted' : 'rejected'}">
-                <div class="submission-header">
-                  <span class="problem-id">Problem {submission.problem_id}</span>
-                  <span class="submission-status">
-                    {submission.is_accepted ? '✅ Accepted' : '❌ Rejected'}
-                  </span>
-                  <span class="submission-time">
-                    {formatDateTime(submission.submission_time)}
-                  </span>
-                </div>
-                <div class="submission-details">
-                  <span class="language">{submission.language}</span>
-                  {#if submission.score > 0}
-                    <span class="score">Score: {submission.score}</span>
-                  {/if}
-                  {#if submission.penalty_time > 0}
-                    <span class="penalty">Penalty: {formatPenalty(submission.penalty_time)}</span>
+        <!-- Leaderboard Rows -->
+        {#if leaderboardData.leaderboard && leaderboardData.leaderboard.length > 0}
+          {#each leaderboardData.leaderboard as entry, rowIndex}
+            <div class="grid-row">
+              <div class="rank-cell {getRankClass(entry.rank)}">{entry.rank}</div>
+              <div class="team-cell">
+                <div class="team-name">{entry.username}</div>
+                <div class="team-meta">
+                  {entry.problems_solved} solved
+                  {#if entry.total_penalty > 0}
+                    · {formatPenalty(entry.total_penalty)} penalty
                   {/if}
                 </div>
               </div>
-            {/each}
+              <div class="score-cell">
+                <div class="score-main">{entry.total_score}</div>
+              </div>
+              {#each leaderboardData.contest.problems || [] as problemId, problemIndex}
+                {@const status = getProblemStatus(entry.user_id, problemId)}
+                {@const attempts = getProblemAttempts(entry.user_id, problemId)}
+                {@const penaltyAttempts = getProblemPenaltyAttempts(entry.user_id, problemId)}
+                {@const solveTime = getProblemTime(entry.user_id, problemId)}
+                {@const firstBlood = isFirstBlood(entry.user_id, problemId)}
+                <div class="problem-cell problem-{status} {firstBlood ? 'first-blood' : ''}">
+                  {#if status === 'solved'}
+                    <div class="solve-time">{solveTime}</div>
+                    {#if penaltyAttempts > 0}
+                      <div class="attempts">{formatAttempts(penaltyAttempts)}</div>
+                    {/if}
+                  {:else if status === 'attempted'}
+                    <div class="attempts">{formatAttempts(attempts)}</div>
+                  {:else if status === 'pending'}
+                    <div class="attempts">Pending...</div>
+                  {:else}
+                    <!-- Empty for untried -->
+                  {/if}
+                </div>
+              {/each}
+            </div>
+          {/each}
+        {/if}
+        
+        <!-- Show empty message below the grid if no submissions -->
+        {#if !leaderboardData.leaderboard || leaderboardData.leaderboard.length === 0}
+          <div class="empty-leaderboard">
+            <p>No submissions yet for this contest.</p>
+            <p>The leaderboard will update as participants submit solutions.</p>
           </div>
         {/if}
+      </div>
+    </div>
+
+    <div class="legend">
+      <h3>Legend</h3>
+      <div class="legend-items">
+        <div class="legend-item">
+          <div class="legend-color problem-solved"></div>
+          <span>Solved</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color problem-attempted"></div>
+          <span>Attempted</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color problem-pending"></div>
+          <span>Pending</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color problem-untried"></div>
+          <span>Not attempted</span>
+        </div>
       </div>
     </div>
 
@@ -211,7 +315,7 @@
 
 <style>
   .leaderboard-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 2rem auto;
     padding: 0 1rem;
   }
@@ -230,13 +334,14 @@
     margin: 0 0 1rem 0;
     font-size: 2rem;
     font-weight: 500;
+    text-align: center;
   }
 
   .contest-info {
-    display: grid;
-    grid-template-columns: auto auto auto;
-    gap: 2rem;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
+    gap: 2rem;
   }
 
   .contest-status {
@@ -246,17 +351,11 @@
   .contest-times {
     font-family: 'Courier New', monospace;
     color: #cccccc;
+    text-align: center;
   }
 
   .contest-times div {
     margin-bottom: 0.5rem;
-  }
-
-  .contest-problems {
-    text-align: center;
-    font-family: 'Courier New', monospace;
-    color: #aaa;
-    font-size: 1.1rem;
   }
 
   .status-badge {
@@ -265,6 +364,7 @@
     font-size: 0.9rem;
     font-weight: 600;
     text-transform: uppercase;
+    font-family: 'Courier New', monospace;
   }
 
   .status-upcoming {
@@ -273,7 +373,7 @@
   }
 
   .status-active {
-    background: #777;
+    background: #4caf50;
     color: #f5f5f5;
   }
 
@@ -282,164 +382,185 @@
     color: #f5f5f5;
   }
 
-  .leaderboard-content {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 2rem;
+  .leaderboard-wrapper {
+    background: #3a3a3a;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 1rem;
     margin-bottom: 2rem;
+    overflow-x: auto;
   }
 
-  .leaderboard-table, .user-submissions {
+  .leaderboard-grid {
+    display: grid;
+    gap: 1px;
+    min-width: 600px;
+    font-family: 'Courier New', monospace;
+  }
+
+  .grid-header {
+    display: contents;
+  }
+
+  .grid-header > div {
+    background: #4a4a4a;
+    color: #f5f5f5;
+    font-weight: 600;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    border: 1px solid #555;
+  }
+
+  .grid-row {
+    display: contents;
+  }
+
+  .grid-row > div {
+    background: #3a3a3a;
+    border: 1px solid #555;
+    padding: 0.75rem 0.5rem;
+    color: #cccccc;
+  }
+
+  .rank-cell {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  .team-cell {
+    padding: 0.5rem !important;
+  }
+
+  .team-name {
+    font-weight: 600;
+    color: #f5f5f5;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+  }
+
+  .team-meta {
+    font-size: 0.8rem;
+    color: #aaa;
+  }
+
+  .score-cell {
+    text-align: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #f5f5f5;
+  }
+
+  .problem-cell {
+    text-align: center;
+    font-size: 0.8rem;
+    line-height: 1.2;
+  }
+
+  .problem-solved {
+    background: #4caf50 !important;
+    color: #fff !important;
+  }
+
+  .problem-solved.first-blood {
+    background: #2e7d32 !important;
+    color: #fff !important;
+    border: 2px solid #1b5e20 !important;
+    font-weight: 600 !important;
+  }
+
+  .problem-attempted {
+    background: #f44336 !important;
+    color: #fff !important;
+  }
+
+  .problem-pending {
+    background: #ff9800 !important;
+    color: #fff !important;
+  }
+
+  .problem-untried {
+    background: #3a3a3a !important;
+    color: #888 !important;
+  }
+
+  .solve-time {
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+
+  .attempts {
+    font-size: 0.7rem;
+    opacity: 0.8;
+  }
+
+  .rank-cell.rank-gold {
+    background: linear-gradient(135deg, #ffd700, #ffed4e) !important;
+    color: #000 !important;
+    font-weight: 700;
+  }
+
+  .rank-cell.rank-silver {
+    background: linear-gradient(135deg, #c0c0c0, #e5e5e5) !important;
+    color: #000 !important;
+    font-weight: 700;
+  }
+
+  .rank-cell.rank-bronze {
+    background: linear-gradient(135deg, #cd7f32, #daa520) !important;
+    color: #000 !important;
+    font-weight: 700;
+  }
+
+  .legend {
     background: #3a3a3a;
     border: 1px solid #555;
     border-radius: 8px;
     padding: 1.5rem;
+    margin-bottom: 2rem;
   }
 
-  h2 {
+  .legend h3 {
     font-family: 'Courier New', monospace;
     color: #f5f5f5;
     margin: 0 0 1rem 0;
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 500;
   }
 
-  table {
-    width: 100%;
-    border-collapse: collapse;
+  .legend-items {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Courier New', monospace;
+    color: #cccccc;
+  }
+
+  .legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 1px solid #555;
+  }
+
+  .empty-leaderboard {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: #aaa;
     font-family: 'Courier New', monospace;
   }
 
-  th, td {
-    padding: 0.75rem;
-    text-align: left;
-    border-bottom: 1px solid #555;
-  }
-
-  th {
-    background: #4a4a4a;
-    color: #f5f5f5;
-    font-weight: 600;
-  }
-
-  td {
-    color: #cccccc;
-  }
-
-  .rank-gold {
-    background: linear-gradient(135deg, #ffd700, #ffed4e);
-    color: #000;
-  }
-
-  .rank-silver {
-    background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
-    color: #000;
-  }
-
-  .rank-bronze {
-    background: linear-gradient(135deg, #cd7f32, #daa520);
-    color: #000;
-  }
-
-  .rank {
-    font-weight: 600;
-    text-align: center;
-  }
-
-  .username {
-    font-weight: 600;
-    color: #f5f5f5;
-  }
-
-  .solved, .score {
-    text-align: center;
-    font-weight: 600;
-  }
-
-  .penalty {
-    text-align: center;
-    color: #ff6b6b;
-  }
-
-  .first-solve {
-    font-size: 0.9rem;
-    color: #888;
-  }
-
-  .submissions-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .submission-item {
-    background: #4a4a4a;
-    border: 1px solid #666;
-    border-radius: 4px;
-    padding: 1rem;
-  }
-
-  .submission-item.accepted {
-    border-left: 4px solid #4caf50;
-  }
-
-  .submission-item.rejected {
-    border-left: 4px solid #f44336;
-  }
-
-  .submission-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-
-  .problem-id {
-    font-weight: 600;
-    color: #f5f5f5;
-  }
-
-  .submission-status {
-    font-weight: 600;
-  }
-
-  .submission-status:global(.accepted) {
-    color: #4caf50;
-  }
-
-  .submission-status:global(.rejected) {
-    color: #ff6b6b;
-  }
-
-  .submission-time {
-    font-size: 0.9rem;
-    color: #aaa;
-  }
-
-  .submission-details {
-    display: flex;
-    gap: 1rem;
-    font-size: 0.9rem;
-    color: #cccccc;
-  }
-
-  .language {
-    color: #f5f5f5;
-  }
-
-  .score {
-    color: #4caf50;
-  }
-
-  .penalty {
-    color: #ff6b6b;
-  }
-
-  .no-submissions {
-    text-align: center;
-    color: #aaa;
-    font-style: italic;
-    padding: 2rem;
+  .empty-leaderboard p {
+    margin: 0.5rem 0;
+    font-size: 1.1rem;
   }
 
   .refresh-info {
@@ -466,6 +587,8 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    white-space: nowrap;
+    max-width: fit-content;
   }
 
   .btn-secondary {
@@ -495,25 +618,44 @@
     border: 1px solid #666;
   }
 
-  @media (max-width: 768px) {
-    .leaderboard-content {
-      grid-template-columns: 1fr;
+  @media (max-width: 1200px) {
+    .leaderboard-grid[style*="grid-template-columns"] {
+      grid-template-columns: var(--grid-columns-tablet) !important;
     }
+    
+    .team-name {
+      font-size: 0.85rem;
+    }
+    
+    .team-meta {
+      font-size: 0.75rem;
+    }
+  }
 
+  @media (max-width: 768px) {
+    .leaderboard-grid[style*="grid-template-columns"] {
+      grid-template-columns: var(--grid-columns-mobile) !important;
+      gap: 0;
+    }
+    
     .contest-info {
-      grid-template-columns: 1fr;
+      flex-direction: column;
       gap: 1rem;
     }
 
-    .submission-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.5rem;
+    .legend-items {
+      justify-content: center;
     }
 
     .refresh-info {
       flex-direction: column;
       gap: 1rem;
+    }
+
+    .grid-header > div,
+    .grid-row > div {
+      padding: 0.5rem 0.25rem;
+      font-size: 0.8rem;
     }
   }
 </style>

@@ -287,39 +287,24 @@ class SubmissionService:
 
     def get_active_contest_for_problem(self, problem_id):
         """Get the active contest that contains this problem"""
+        # Use a fresh connection for this operation
+        conn = get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
         try:
-            # First, get timezone info for debugging
-            self.get_database_timezone_info()
-
-            # Debug: Let's see what's actually in the problems column
-            debug_query = """
-                SELECT id, name, problems, pg_typeof(problems) as problems_type
-                FROM contests 
-                LIMIT 3
-            """
-            self.cursor.execute(debug_query)
-            debug_results = self.cursor.fetchall()
-            print(f"🔍 Debug: Sample contests and their problems column:")
-            for debug_result in debug_results:
-                print(f"   Contest {debug_result['id']}: {debug_result['name']}")
-                print(
-                    f"   Problems: {debug_result['problems']} (type: {debug_result['problems_type']})"
-                )
-
-            # Try different approaches to handle the problems array
-            # First, try the simple approach
+            # Handle JSONB array properly
             query = """
                 SELECT id, name, start_time, end_time, problems
                 FROM contests 
-                WHERE %s::text = ANY(problems)
+                WHERE problems @> %s::jsonb
                 AND start_time <= CURRENT_TIMESTAMP 
                 AND end_time >= CURRENT_TIMESTAMP
                 ORDER BY start_time DESC
                 LIMIT 1
             """
 
-            self.cursor.execute(query, (problem_id,))
-            contest = self.cursor.fetchone()
+            cursor.execute(query, (f'["{problem_id}"]',))
+            contest = cursor.fetchone()
 
             if contest:
                 print(
@@ -329,49 +314,21 @@ class SubmissionService:
                     f"   Contest time range: {contest['start_time']} to {contest['end_time']}"
                 )
 
-                # Check if contest is actually active
-                self.cursor.execute("SELECT CURRENT_TIMESTAMP")
-                current_time = self.cursor.fetchone()[0]
-                print(f"   Current database time: {current_time}")
-                print(
-                    f"   Start time check: {contest['start_time']} <= {current_time} = {contest['start_time'] <= current_time}"
-                )
-                print(
-                    f"   End time check: {contest['end_time']} >= {current_time} = {contest['end_time'] >= current_time}"
-                )
+                # Contest is already found by the query which checks time constraints
+                print(f"   Contest is active (verified by query constraints)")
             else:
                 print(f"ℹ️ No active contest found for problem {problem_id}")
-                # Debug: check what contests exist for this problem
-                debug_query = """
-                    SELECT id, name, start_time, end_time, problems,
-                           start_time <= CURRENT_TIMESTAMP as start_passed,
-                           end_time >= CURRENT_TIMESTAMP as end_not_reached
-                    FROM contests 
-                    WHERE %s::text = ANY(problems)
-                    ORDER BY start_time DESC
-                """
-                self.cursor.execute(debug_query, (problem_id,))
-                debug_contests = self.cursor.fetchall()
-                for debug_contest in debug_contests:
-                    print(
-                        f"🔍 Debug contest {debug_contest['id']}: {debug_contest['name']}"
-                    )
-                    print(
-                        f"   Start: {debug_contest['start_time']} (passed: {debug_contest['start_passed']})"
-                    )
-                    print(
-                        f"   End: {debug_contest['end_time']} (not reached: {debug_contest['end_not_reached']})"
-                    )
 
             return contest
         except Exception as e:
             print(f"❌ Error getting active contest for problem {problem_id}: {e}")
-            # Rollback any failed transaction
-            try:
-                self.conn.rollback()
-            except:
-                pass
+            import traceback
+
+            traceback.print_exc()
             return None
+        finally:
+            cursor.close()
+            conn.close()
 
     def create_contest_submission(
         self,
