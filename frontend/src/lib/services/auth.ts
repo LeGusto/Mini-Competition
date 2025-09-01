@@ -44,7 +44,7 @@ class AuthService {
         authStore.setAuth(result.user, result.token);
         return { success: true, user: result.user, token: result.token };
       } else {
-        return { success: false, error: result.message || result.error || 'Login failed' };
+        return { success: false, error: result.error || 'Login failed' };
       }
     } catch (error) {
       return { success: false, error: 'Network error' };
@@ -54,28 +54,20 @@ class AuthService {
   // Register user
   async register(data: RegisterData): Promise<AuthResponse> {
     try {
-      // Get user's timezone
-      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      
       const response = await fetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          ...data,
-          timezone: userTimezone
-        })
+        body: JSON.stringify(data)
       });
 
       const result = await response.json();
 
-      if (response.ok && result.token) {
-        // Auto-login after successful registration
-        authStore.setAuth(result.user, result.token);
-        return { success: true, user: result.user, token: result.token };
+      if (response.ok && result.user) {
+        return { success: true, user: result.user };
       } else {
-        return { success: false, error: result.message || 'Registration failed' };
+        return { success: false, error: result.error || 'Registration failed' };
       }
     } catch (error) {
       return { success: false, error: 'Network error' };
