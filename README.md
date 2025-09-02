@@ -1,6 +1,8 @@
 # Mini-Competition System
 
-A comprehensive competitive programming contest platform built with Flask (Python) backend, SvelteKit (TypeScript) frontend, and PostgreSQL database. Features ICPC-style contest management, real-time leaderboards, automated judging, and team-based competitions.
+A comprehensive competitive programming contest platform built with Flask (Python) backend, SvelteKit (TypeScript) frontend, and PostgreSQL database. Features ICPC-style contest management, real-time leaderboards, automated judging, and team-based competitions. 
+
+Mini-Judge is needed to judge submissions: https://github.com/LeGusto/Mini-Judge
 
 ## 🏗️ Architecture Overview
 
