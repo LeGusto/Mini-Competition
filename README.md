@@ -428,7 +428,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Verify network connectivity: `docker network inspect`
 - Database issues: Check PostgreSQL logs and connection strings
 - Frontend build issues: Clear node_modules and reinstall
-
----
-
-Built with ❤️ for competitive programming communities
