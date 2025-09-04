@@ -68,23 +68,43 @@ def setup_tables():
         with open(script_path, "r") as f:
             sql_content = f.read()
 
-        # Execute each statement separately
+        # Execute each statement separately using a more robust parser
         statements = []
-        current_statement = ""
 
-        for line in sql_content.split("\n"):
-            line = line.strip()
-            if line.startswith("--") or not line:  # Skip comments and empty lines
+        # Split by semicolon and process each statement
+        raw_statements = sql_content.split(";")
+
+        for statement in raw_statements:
+            # Clean up the statement
+            statement = statement.strip()
+
+            # Skip empty statements and comments
+            if not statement or statement.startswith("--"):
                 continue
-            current_statement += line + " "
-            if line.endswith(";"):
-                statements.append(current_statement.strip())
-                current_statement = ""
+
+            # Remove single-line comments
+            lines = statement.split("\n")
+            cleaned_lines = []
+            for line in lines:
+                line = line.strip()
+                if line and not line.startswith("--"):
+                    cleaned_lines.append(line)
+
+            if cleaned_lines:
+                final_statement = " ".join(cleaned_lines)
+                if final_statement.strip():
+                    statements.append(final_statement)
 
         # Execute each statement
-        for statement in statements:
+        for i, statement in enumerate(statements):
             if statement.strip():
-                cursor.execute(statement)
+                try:
+                    print(f"Executing statement {i+1}/{len(statements)}...")
+                    cursor.execute(statement)
+                except Exception as e:
+                    print(f"❌ Error executing statement {i+1}: {statement[:100]}...")
+                    print(f"Error: {e}")
+                    raise
 
         print("✅ Tables created successfully!")
 
