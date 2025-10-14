@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { API_BASE_URL } from '$lib/config';
     import { onMount } from 'svelte';
     import { authService } from '$lib/services/auth';
     import { authStore } from '$lib/stores/auth';
@@ -38,7 +39,7 @@
             loading = true;
             error = null;
             
-            const response = await authService.authenticatedRequest('http://localhost:5000/submission/all');
+            const response = await authService.authenticatedRequest(`${API_BASE_URL}/submission/all`);
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
@@ -206,7 +207,7 @@
                                 {submission.execution_time ? `${submission.execution_time}s` : 'N/A'}
                             </td>
                             <td class="submissions-memory">
-                                {submission.memory_used ? `${submission.memory_used}MB` : 'N/A'}
+                                {submission.memory_used ? `${(submission.memory_used / (1024 * 1024)).toFixed(2)}MB` : 'N/A'}
                             </td>
                             <td class="submissions-date">{formatDate(submission.submission_time)}</td>
                             <td>
@@ -370,13 +371,16 @@
         padding: 4px 8px;
         border-radius: 4px;
         font-size: 0.9rem;
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         min-height: 24px;
         line-height: 1.2;
         white-space: normal;
         word-wrap: break-word;
         text-align: center;
         vertical-align: middle;
+        min-width: 80px;
     }
 
     .submissions-status-accepted {

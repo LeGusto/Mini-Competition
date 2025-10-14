@@ -7,9 +7,36 @@ This script will create the database and tables for the application.
 import psycopg2
 import os
 import sys
+import time
 from pathlib import Path
 from services.auth import AuthService
 from config import DB_HOST, DB_NAME, DB_USER, DB_PASSWORD
+
+
+def wait_for_postgres(max_retries=30, delay=1):
+    """Wait for PostgreSQL to be ready"""
+    print("⏳ Waiting for PostgreSQL to be ready...")
+    for i in range(max_retries):
+        try:
+            conn = psycopg2.connect(
+                host=DB_HOST, database="postgres", user=DB_USER, password=DB_PASSWORD
+            )
+            conn.close()
+            print("✅ PostgreSQL is ready!")
+            return True
+        except psycopg2.OperationalError as e:
+            if i < max_retries - 1:
+                print(
+                    f"   Attempt {i+1}/{max_retries}: PostgreSQL not ready yet, waiting {delay}s..."
+                )
+                time.sleep(delay)
+            else:
+                print(
+                    f"❌ PostgreSQL failed to become ready after {max_retries} attempts"
+                )
+                print(f"   Last error: {e}")
+                return False
+    return False
 
 
 def create_database():
@@ -68,53 +95,82 @@ def setup_tables():
         with open(script_path, "r") as f:
             sql_content = f.read()
 
-        # Execute each statement separately using a more robust parser
+        # Remove comments from SQL
+        lines = sql_content.split("\n")
+        cleaned_lines = []
+        for line in lines:
+            # Remove inline comments
+            if "--" in line:
+                line = line[: line.index("--")]
+            line = line.strip()
+            if line:
+                cleaned_lines.append(line)
+
+        cleaned_sql = "\n".join(cleaned_lines)
+
+        # Split by semicolon to get individual statements
+        raw_statements = cleaned_sql.split(";")
         statements = []
 
-        # Split by semicolon and process each statement
-        raw_statements = sql_content.split(";")
-
         for statement in raw_statements:
-            # Clean up the statement
             statement = statement.strip()
+            if statement:
+                statements.append(statement + ";")
 
-            # Skip empty statements and comments
-            if not statement or statement.startswith("--"):
-                continue
-
-            # Remove single-line comments
-            lines = statement.split("\n")
-            cleaned_lines = []
-            for line in lines:
-                line = line.strip()
-                if line and not line.startswith("--"):
-                    cleaned_lines.append(line)
-
-            if cleaned_lines:
-                final_statement = " ".join(cleaned_lines)
-                if final_statement.strip():
-                    statements.append(final_statement)
+        print(f"Found {len(statements)} SQL statements to execute")
 
         # Execute each statement
-        for i, statement in enumerate(statements):
-            if statement.strip():
-                try:
-                    print(f"Executing statement {i+1}/{len(statements)}...")
-                    cursor.execute(statement)
-                except Exception as e:
-                    print(f"❌ Error executing statement {i+1}: {statement[:100]}...")
-                    print(f"Error: {e}")
-                    raise
+        for i, statement in enumerate(statements, 1):
+            try:
+                print(f"Executing statement {i}/{len(statements)}...")
+                cursor.execute(statement)
+                conn.commit()
+            except Exception as e:
+                print(f"❌ Error executing statement {i}:")
+                print(f"   Statement preview: {statement[:150]}...")
+                print(f"   Error: {e}")
+                raise
 
         print("✅ Tables created successfully!")
 
-        # Create a test user with proper password hashing
+        # Create or update admin user
         import bcrypt
 
-        auth_service = AuthService()
-        auth_service.create_user("admin", "admin123")
+        try:
+            auth_service = AuthService()
 
-        print("✅ Default admin user created (username: admin, password: admin123)")
+            # Check if admin user exists
+            existing_admin = auth_service.get_user("admin")
+
+            if existing_admin:
+                print("ℹ️  Admin user already exists, updating password and role...")
+                # Update the password and role directly
+                hashed = auth_service.hash_password("admin")
+                cursor.execute(
+                    "UPDATE users SET password = %s, role = %s WHERE username = %s",
+                    (hashed.decode(), "admin", "admin"),
+                )
+                conn.commit()
+                print(
+                    "✅ Admin user updated (username: admin, password: admin, role: admin)"
+                )
+            else:
+                # Create new admin user
+                auth_service.create_user("admin", "admin")
+                # Update role to admin
+                cursor.execute(
+                    "UPDATE users SET role = %s WHERE username = %s",
+                    ("admin", "admin"),
+                )
+                conn.commit()
+                print(
+                    "✅ Default admin user created (username: admin, password: admin, role: admin)"
+                )
+        except Exception as e:
+            print(f"⚠️  Warning: Could not create/update admin user: {e}")
+            import traceback
+
+            traceback.print_exc()
 
         cursor.close()
         conn.close()
@@ -129,18 +185,13 @@ def main():
     print("🚀 Setting up Mini-Competition Database...")
     print("=" * 50)
 
-    # Check if PostgreSQL is running
-    try:
-        psycopg2.connect(
-            host=DB_HOST, database="postgres", user=DB_USER, password=DB_PASSWORD
-        )
-    except Exception as e:
+    # Wait for PostgreSQL to be ready
+    if not wait_for_postgres():
         print("❌ Cannot connect to PostgreSQL!")
         print("Make sure PostgreSQL is running and accessible with:")
         print(f"  - Host: {DB_HOST}")
         print(f"  - User: {DB_USER}")
         print(f"  - Password: {DB_PASSWORD}")
-        print(f"Error: {e}")
         sys.exit(1)
 
     create_database()
@@ -153,7 +204,7 @@ def main():
     print("  python main.py")
     print("\nDefault admin credentials:")
     print("  Username: admin")
-    print("  Password: admin123")
+    print("  Password: admin")
 
 
 if __name__ == "__main__":

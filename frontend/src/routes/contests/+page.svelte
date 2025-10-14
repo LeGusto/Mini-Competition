@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { API_BASE_URL } from '$lib/config';
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
   import { contestService } from '$lib/services/contest';
@@ -21,7 +22,7 @@
     try {
       loading = true;
       const userTimezone = $authStore.user?.timezone || 'UTC';
-      const response = await authService.authenticatedRequest(`http://localhost:5000/contests?timezone=${encodeURIComponent(userTimezone)}`);
+      const response = await authService.authenticatedRequest(`${API_BASE_URL}/contests?timezone=${encodeURIComponent(userTimezone)}`);
 
       if (response.ok) {
         contests = await response.json();
@@ -395,6 +396,7 @@
     display: inline-block;
     white-space: nowrap;
     max-width: fit-content;
+    text-align: center;
   }
 
   .btn-small {

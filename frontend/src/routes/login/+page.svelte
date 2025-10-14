@@ -22,7 +22,7 @@
     const result = await authService.login({ username: loginUsername, password: loginPassword });
     
     if (result.success) {
-      await goto('/main');
+      await goto('/problems');
     } else {
       error = result.error || 'Login failed';
     }
@@ -37,7 +37,7 @@
     const result = await authService.register({ username: registerUsername, password: registerPassword });
     
     if (result.success) {
-      await goto('/main');
+      await goto('/problems');
     } else {
       error = result.error || 'Registration failed';
     }

@@ -28,6 +28,7 @@ def require_auth(f):
     def decorated(*args, **kwargs):
         token = get_token_from_request()
         if not token:
+            print(f"[AUTH DEBUG] No token found. Headers: {dict(request.headers)}")
             return jsonify({"message": "Token is missing"}), 401
         try:
             payload = AuthService().verify_token(token)

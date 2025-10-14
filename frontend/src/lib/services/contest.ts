@@ -1,7 +1,7 @@
 import { authService } from './auth';
+import { API_BASE_URL } from '../config';
 
-// For browser access, always use localhost since the browser runs outside Docker
-const API_BASE = 'http://localhost:5000';
+const API_BASE = API_BASE_URL;
 
 interface ContestTeam {
   id: number;

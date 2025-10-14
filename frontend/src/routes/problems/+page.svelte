@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { API_BASE_URL } from '$lib/config';
   import { onMount } from 'svelte';
   import { authService } from '$lib/services/auth';
   import { goto } from '$app/navigation';
@@ -33,7 +34,7 @@
       error = null;
 
       // Load problems
-      const problemsResponse = await authService.authenticatedRequest('http://localhost:5000/general/problems');
+      const problemsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/general/problems`);
       if (!problemsResponse.ok) {
         throw new Error(`HTTP ${problemsResponse.status}`);
       }
@@ -42,7 +43,7 @@
       problems = problemsData.problems || [];
 
       // Load user submissions to determine problem status
-      const submissionsResponse = await authService.authenticatedRequest('http://localhost:5000/submission/all');
+      const submissionsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/submission/all`);
       if (submissionsResponse.ok) {
         const submissionsData = await submissionsResponse.json();
         submissions = submissionsData || [];

@@ -6,8 +6,11 @@
   function getStatusClass(status: string) {
     switch (status) {
       case 'pending': return 'status-pending';
-      case 'judging': return 'status-judging';
-      case 'complete': return 'status-complete';
+      case 'queued': return 'status-queued';
+      case 'processing': return 'status-processing';
+      case 'completed': return 'status-completed';
+      case 'accepted': return 'status-accepted';
+      case 'wrong_answer': return 'status-wrong-answer';
       case 'error': return 'status-error';
       default: return '';
     }
@@ -37,8 +40,7 @@
       <div class="status-item">
         <span class="status-label">Status:</span>
         <span class="status-value {getStatusClass(submissionResult.status)}">
-          {submissionResult.status || 'pending'}
-          {#if polling}(updating...){/if}
+          {submissionResult.status || 'queued'}
         </span>
       </div>
       {#if submissionResult.verdict}
@@ -84,23 +86,29 @@
   .status-item {
     display: flex;
     justify-content: space-between;
+    align-items: center;
   }
 
   .status-label {
     color: #888;
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
+    text-align: left;
   }
 
   .status-value {
     color: #e0e0e0;
     font-family: 'Courier New', monospace;
     font-weight: 600;
+    text-align: center;
   }
 
   .status-pending { color: #ffa726; }
-  .status-judging { color: #ffb74d; }
-  .status-complete { color: #66bb6a; }
+  .status-queued { color: #ffa726; }
+  .status-processing { color: #ffb74d; }
+  .status-completed { color: #66bb6a; }
+  .status-accepted { color: #66bb6a; }
+  .status-wrong-answer { color: #ef5350; }
   .status-error { color: #ef5350; }
 
   .verdict-AC { color: #66bb6a; }

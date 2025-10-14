@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { API_BASE_URL } from '$lib/config';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { onMount, onDestroy } from 'svelte';
@@ -12,6 +13,7 @@
   let refreshInterval: any = null;
   let contestTimer: string = '';
   let timerInterval: any = null;
+  let previousContestStatus: 'not_started' | 'in_progress' | 'ended' = 'not_started';
 
   onMount(async () => {
     await loadLeaderboard();
@@ -33,7 +35,7 @@
   async function loadLeaderboard() {
     try {
       const response = await authService.authenticatedRequest(
-        `http://localhost:5000/contest/${contestId}/leaderboard`
+        `${API_BASE_URL}/contest/${contestId}/leaderboard`
       );
       
       if (response.ok) {
@@ -210,6 +212,9 @@
       clearInterval(timerInterval);
     }
 
+    // Track if this is the first update
+    let isFirstUpdate = true;
+
     const updateTimer = () => {
       if (!contest) return;
 
@@ -234,16 +239,31 @@
         return;
       }
 
+      // Determine current contest status
+      let currentStatus: 'not_started' | 'in_progress' | 'ended';
       if (now < startTime) {
+        currentStatus = 'not_started';
         targetTime = startTime;
         timerType = 'Starts in: ';
       } else if (now >= startTime && now < endTime) {
+        currentStatus = 'in_progress';
         targetTime = endTime;
         timerType = 'Ends in: ';
       } else {
+        currentStatus = 'ended';
         contestTimer = 'Contest Ended';
         return;
       }
+      
+      if (!isFirstUpdate && previousContestStatus === 'not_started' && currentStatus === 'in_progress') {
+        console.log('Contest has started! Refreshing page...');
+        window.location.reload();
+        return;
+      }
+
+      // Update previous status and mark that first update is done
+      previousContestStatus = currentStatus;
+      isFirstUpdate = false;
 
       const timeDiff = targetTime.getTime() - now.getTime();
 
@@ -287,7 +307,7 @@
 
     <div class="navigation-above">
       <button class="btn btn-secondary" on:click={goBack}>
-        ← Back to Contest
+        Back to Contest
       </button>
     </div>
 
@@ -731,6 +751,7 @@
     transition: all 0.2s ease;
     white-space: nowrap;
     max-width: fit-content;
+    text-align: center;
   }
 
   .btn-secondary {

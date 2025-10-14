@@ -14,7 +14,7 @@
           // Redirect to login if not authenticated
           goto('/login');
         } else {
-          goto('/main')
+          goto('/problems')
         }
       }
     });

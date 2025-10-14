@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { API_BASE_URL } from '$lib/config';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
@@ -29,7 +30,7 @@
 
       // Load problem metadata
       const problemResponse = await authService.authenticatedRequest(
-        `http://localhost:5000/general/problem/${problemId}/metadata`
+        `${API_BASE_URL}/general/problem/${problemId}/metadata`
       );
       if (problemResponse.ok) {
         problem = await problemResponse.json();
@@ -52,7 +53,7 @@
   async function loadProblemStatement() {
     try {
       const response = await authService.authenticatedRequest(
-        `http://localhost:5000/general/problem/${problemId}/statement`
+        `${API_BASE_URL}/general/problem/${problemId}/statement`
       );
 
       if (response.ok) {
@@ -112,7 +113,7 @@
   {:else if problem}
     <div class="navigation-above">
       <button class="btn btn-secondary" on:click={goBackToProblems}>
-        ← Back to Problems
+        Back to Problems
       </button>
     </div>
 
@@ -292,6 +293,7 @@
     transition: all 0.2s ease;
     text-decoration: none;
     display: inline-block;
+    text-align: center;
   }
 
   .btn:disabled {

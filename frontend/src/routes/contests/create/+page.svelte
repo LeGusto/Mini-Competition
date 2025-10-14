@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { API_BASE_URL } from '$lib/config';
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
   import { authStore } from '$lib/stores/auth';
@@ -14,6 +15,8 @@
   let loading = false;
   let error = '';
   let availableProblems: any[] = [];
+  let validationErrors: string[] = [];
+  let fieldErrors: { [key: string]: boolean } = {};
 
   onMount(async () => {
     // Check if user is admin, redirect if not
@@ -24,7 +27,7 @@
 
     // Load available problems
     try {
-      const response = await authService.authenticatedRequest('http://localhost:5000/general/problems');
+      const response = await authService.authenticatedRequest(`${API_BASE_URL}/general/problems`);
       const data = await response.json();
       availableProblems = data.problems || [];
     } catch (err) {
@@ -32,24 +35,95 @@
     }
   });
 
-  async function createContest() {
+  function validateContest(): boolean {
+    validationErrors = [];
+    fieldErrors = {};
+    console.log('Validating contest...', { name, startDate, startTime, endDate, endTime, problemIds });
+    
+    // Check required fields
     if (!name || !startDate || !startTime || !endDate || !endTime) {
-      error = 'Please fill in all required fields';
+      validationErrors.push('Please fill in all required fields');
+      if (!name) fieldErrors.name = true;
+      if (!startDate) fieldErrors.startDate = true;
+      if (!startTime) fieldErrors.startTime = true;
+      if (!endDate) fieldErrors.endDate = true;
+      if (!endTime) fieldErrors.endTime = true;
+      console.log('Missing required fields');
+      return false;
+    }
+
+    // Validate start time is after current time
+    const now = new Date();
+    const startDateTime = new Date(`${startDate}T${startTime}`);
+    console.log('Start time validation:', { now: now.toISOString(), startDateTime: startDateTime.toISOString() });
+    
+    if (startDateTime <= now) {
+      validationErrors.push('Start time must be after the current time');
+      fieldErrors.startDate = true;
+      fieldErrors.startTime = true;
+      console.log('Start time is in the past');
+    }
+
+    // Validate end time is after start time
+    const endDateTime = new Date(`${endDate}T${endTime}`);
+    console.log('End time validation:', { startDateTime: startDateTime.toISOString(), endDateTime: endDateTime.toISOString() });
+    
+    if (endDateTime <= startDateTime) {
+      validationErrors.push('End time must be after start time');
+      fieldErrors.endDate = true;
+      fieldErrors.endTime = true;
+      console.log('End time is before start time');
+    }
+
+    // Validate problem IDs exist
+    if (problemIds.trim()) {
+      const inputProblemIds = problemIds.split(',').map(id => id.trim()).filter(id => id);
+      
+      // Remove duplicates
+      const uniqueProblemIds = [...new Set(inputProblemIds)];
+      
+      if (uniqueProblemIds.length !== inputProblemIds.length) {
+        problemIds = uniqueProblemIds.join(', ');
+      }
+      
+      const availableProblemIds = availableProblems.map(p => p.id.toString());
+      console.log('Problem ID validation:', { inputProblemIds, uniqueProblemIds, availableProblemIds });
+      
+      for (const problemId of uniqueProblemIds) {
+        if (!availableProblemIds.includes(problemId)) {
+          validationErrors.push(`Problem ID "${problemId}" does not exist`);
+          fieldErrors.problemIds = true;
+          console.log(`Problem ID ${problemId} does not exist`);
+        }
+      }
+    }
+
+    console.log('Validation result:', { isValid: validationErrors.length === 0, errors: validationErrors, fieldErrors });
+    return validationErrors.length === 0;
+  }
+
+  async function createContest() {
+    // Clear previous errors
+    error = '';
+    validationErrors = [];
+    hasBeenSubmitted = true;
+
+    // Validate the form
+    if (!validateContest()) {
       return;
     }
 
     loading = true;
-    error = '';
 
     try {
       // Combine date and time into ISO format
       const startDateTime = new Date(`${startDate}T${startTime}`).toISOString();
       const endDateTime = new Date(`${endDate}T${endTime}`).toISOString();
 
-      // Parse problem IDs (comma-separated)
-      const problems = problemIds.split(',').map(id => id.trim()).filter(id => id);
+      // Parse problem IDs (comma-separated) and remove duplicates
+      const problems = [...new Set(problemIds.split(',').map(id => id.trim()).filter(id => id))];
 
-      const response = await authService.authenticatedRequest('http://localhost:5000/contest', {
+      const response = await authService.authenticatedRequest(`${API_BASE_URL}/contest`, {
         method: 'POST',
         body: JSON.stringify({
           name,
@@ -77,16 +151,23 @@
   function handleCancel() {
     goto('/contests');
   }
+
+  // Clear validation errors when user starts typing (but only after first submission attempt)
+  let hasBeenSubmitted = false;
+  
+  function clearValidationErrors() {
+    if (hasBeenSubmitted && validationErrors.length > 0) {
+      validationErrors = [];
+      fieldErrors = {};
+    }
+  }
+
 </script>
 
 <div class="create-contest-container">
   <div class="form-card">
     <h1>Create New Contest</h1>
     
-    {#if error}
-      <div class="error-message">{error}</div>
-    {/if}
-
     <form on:submit|preventDefault={createContest}>
       <div class="form-group">
         <label for="name">Contest Name *</label>
@@ -95,6 +176,8 @@
           type="text"
           bind:value={name}
           placeholder="Weekly Contest #1"
+          on:input={clearValidationErrors}
+          class:error={fieldErrors.name}
           required
         />
       </div>
@@ -116,6 +199,8 @@
             id="start-date"
             type="date"
             bind:value={startDate}
+            on:input={clearValidationErrors}
+            class:error={fieldErrors.startDate}
             required
           />
         </div>
@@ -125,6 +210,8 @@
             id="start-time"
             type="time"
             bind:value={startTime}
+            on:input={clearValidationErrors}
+            class:error={fieldErrors.startTime}
             required
           />
         </div>
@@ -140,6 +227,8 @@
             id="end-date"
             type="date"
             bind:value={endDate}
+            on:input={clearValidationErrors}
+            class:error={fieldErrors.endDate}
             required
           />
         </div>
@@ -149,6 +238,8 @@
             id="end-time"
             type="time"
             bind:value={endTime}
+            on:input={clearValidationErrors}
+            class:error={fieldErrors.endTime}
             required
           />
         </div>
@@ -161,6 +252,8 @@
           type="text"
           bind:value={problemIds}
           placeholder="1, 2, 3"
+          on:input={clearValidationErrors}
+          class:error={fieldErrors.problemIds}
         />
         <small class="form-help">
           Enter problem IDs separated by commas (e.g., 1, 2, 3)
@@ -182,6 +275,21 @@
         </button>
       </div>
     </form>
+
+    {#if error}
+      <div class="error-message">{error}</div>
+    {/if}
+
+    {#if validationErrors.length > 0}
+      <div class="validation-errors">
+        <strong>Please fix the following errors:</strong>
+        <ul>
+          {#each validationErrors as validationError}
+            <li>{validationError}</li>
+          {/each}
+        </ul>
+      </div>
+    {/if}
   </div>
 </div>
 
@@ -211,9 +319,34 @@
     color: #ff6b6b;
     padding: 0.75rem;
     border-radius: 4px;
-    margin-bottom: 1rem;
+    margin-top: 1rem;
     font-family: 'Courier New', monospace;
     border: 1px solid #666;
+  }
+
+  .validation-errors {
+    background: #4a4a4a;
+    color: #ff6b6b;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+    font-family: 'Courier New', monospace;
+    border: 1px solid #666;
+  }
+
+  .validation-errors strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #ff6b6b;
+  }
+
+  .validation-errors ul {
+    margin: 0;
+    padding-left: 1.5rem;
+  }
+
+  .validation-errors li {
+    margin-bottom: 0.25rem;
   }
 
   .form-group {
@@ -269,6 +402,16 @@
     box-shadow: 0 0 0 2px rgba(136, 136, 136, 0.3);
   }
 
+  input.error, textarea.error {
+    border-color: #ff6b6b !important;
+    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.3) !important;
+  }
+
+  input.error:focus, textarea.error:focus {
+    border-color: #ff6b6b !important;
+    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.5) !important;
+  }
+
   .form-help {
     display: block;
     margin-top: 0.25rem;
@@ -303,6 +446,7 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+    text-align: center;
   }
 
   .btn:disabled {

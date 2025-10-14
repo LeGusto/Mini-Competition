@@ -102,6 +102,7 @@
     transition: all 0.2s ease;
     text-decoration: none;
     display: inline-block;
+    text-align: center;
   }
 
   .btn-secondary {

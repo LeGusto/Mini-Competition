@@ -7,6 +7,9 @@ import os
 import uuid
 import requests
 from datetime import datetime
+import time
+from utils.logger import log_submission, log_error, log_request
+from datetime import timezone as tz
 
 submission_bp = Blueprint("submission", __name__)
 submission_service = SubmissionService()
@@ -16,18 +19,36 @@ submission_service = SubmissionService()
 @require_auth
 def submit_solution():
     """Submit a solution to a problem"""
+    start_time = time.time()
     file = request.files.get("file")
     problem_id = request.form.get("problem_id")
     language = request.form.get("language")
     user_id = request.user_id
 
-    print(file, problem_id, language, user_id)
+    # Log submission attempt
+    log_submission(user_id, problem_id, "SUBMIT_ATTEMPT", f"Language: {language}")
 
     try:
         result = submission_service.submit_solution(file, problem_id, language, user_id)
+
+        # Log successful submission
+        submission_id = result.get("data", {}).get("submission_id")
+        log_submission(user_id, problem_id, "SUBMIT_SUCCESS", f"ID: {submission_id}")
+
+        # Log request
+        duration = int((time.time() - start_time) * 1000)
+        log_request("POST", "/submission/submit", result["status_code"], duration)
+
         return jsonify(result["data"]), result["status_code"]
     except Exception as e:
-        print(e)
+        # Log failed submission
+        log_submission(user_id, problem_id, "SUBMIT_ERROR", str(e))
+        log_error(f"Submission failed: {str(e)}")
+
+        # Log request
+        duration = int((time.time() - start_time) * 1000)
+        log_request("POST", "/submission/submit", 400, duration)
+
         return jsonify({"message": str(e)}), 400
 
 
@@ -114,9 +135,10 @@ def receive_judge_result():
                 print(f"👤 User ID: {user_id}")
 
                 # Get all active contests for this user and problem
+                submission_time = submission_details["submission_time"]
                 contests = (
                     submission_service.get_all_active_contests_for_user_and_problem(
-                        user_id, problem_id
+                        user_id, problem_id, submission_time
                     )
                 )
 
@@ -156,6 +178,31 @@ def receive_judge_result():
                         print(
                             f"   📋 Processing contest: {contest['name']} (ID: {contest['id']})"
                         )
+
+                        contest_start = contest["start_time"]
+                        contest_end = contest["end_time"]
+
+                        if submission_time.tzinfo is None:
+                            submission_time_check = submission_time.replace(
+                                tzinfo=tz.utc
+                            )
+                        else:
+                            submission_time_check = submission_time
+
+                        if contest_start.tzinfo is None:
+                            contest_start = contest_start.replace(tzinfo=tz.utc)
+                        if contest_end.tzinfo is None:
+                            contest_end = contest_end.replace(tzinfo=tz.utc)
+
+                        # Only create contest submission if within contest time bounds
+                        if (
+                            submission_time_check < contest_start
+                            or submission_time_check >= contest_end
+                        ):
+                            print(
+                                f"   ⚠️  Skipping contest {contest['id']}: submission made outside contest time"
+                            )
+                            continue
 
                         contest_submission_id = (
                             submission_service.create_contest_submission(

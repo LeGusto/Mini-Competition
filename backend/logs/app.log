@@ -1,0 +1,214 @@
+2025-10-14 17:30:22 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:30:58 | INFO     | root                 | log_submission :330  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:30:58 | INFO     | root                 | log_submission :330  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 84
+2025-10-14 17:30:58 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (29ms)
+2025-10-14 17:31:32 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:32:44 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:34:29 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:34:29 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 85
+2025-10-14 17:34:29 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (26ms)
+2025-10-14 17:36:39 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:36:39 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 86
+2025-10-14 17:36:39 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (5ms)
+2025-10-14 17:37:26 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:37:26 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 87
+2025-10-14 17:37:26 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (17ms)
+2025-10-14 17:38:53 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:38:53 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 88
+2025-10-14 17:38:53 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (19ms)
+2025-10-14 17:40:42 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:40:42 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 89
+2025-10-14 17:40:42 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (8ms)
+2025-10-14 17:43:14 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:44:57 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:44:59 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:44:59 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 90
+2025-10-14 17:44:59 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (21ms)
+2025-10-14 17:45:34 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:45:40 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:45:40 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 91
+2025-10-14 17:45:40 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (26ms)
+2025-10-14 17:47:34 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:47:34 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 92
+2025-10-14 17:47:34 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (18ms)
+2025-10-14 17:48:50 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:48:50 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 93
+2025-10-14 17:48:50 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (9ms)
+2025-10-14 17:49:25 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:49:43 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:49:51 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:49:55 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 17:50:41 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 17:50:41 | INFO     | root                 | log_submission :338  | User 2 | Problem 1 | SUBMIT_SUCCESS | ID: 94
+2025-10-14 17:50:41 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (22ms)
+2025-10-14 18:02:33 | INFO     | root                 | log_submission :338  | User 80 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:02:33 | INFO     | root                 | log_submission :338  | User 80 | Problem 1 | SUBMIT_SUCCESS | ID: 95
+2025-10-14 18:02:33 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (19ms)
+2025-10-14 18:03:34 | INFO     | root                 | log_submission :338  | User 80 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:03:34 | INFO     | root                 | log_submission :338  | User 80 | Problem 2 | SUBMIT_SUCCESS | ID: 96
+2025-10-14 18:03:34 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (16ms)
+2025-10-14 18:03:42 | INFO     | root                 | log_submission :338  | User 80 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:03:42 | INFO     | root                 | log_submission :338  | User 80 | Problem 2 | SUBMIT_SUCCESS | ID: 97
+2025-10-14 18:03:42 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (18ms)
+2025-10-14 18:04:12 | INFO     | root                 | log_submission :338  | User 80 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:04:12 | INFO     | root                 | log_submission :338  | User 80 | Problem 1 | SUBMIT_SUCCESS | ID: 98
+2025-10-14 18:04:12 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (19ms)
+2025-10-14 18:22:37 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:22:37 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 99
+2025-10-14 18:22:37 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (16ms)
+2025-10-14 18:23:06 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:23:06 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_SUCCESS | ID: 100
+2025-10-14 18:23:06 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (17ms)
+2025-10-14 18:23:37 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:23:37 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 101
+2025-10-14 18:23:37 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (11ms)
+2025-10-14 18:23:54 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:23:54 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_SUCCESS | ID: 102
+2025-10-14 18:23:54 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (12ms)
+2025-10-14 18:26:13 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:26:13 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 103
+2025-10-14 18:26:13 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (16ms)
+2025-10-14 18:26:37 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:26:37 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 104
+2025-10-14 18:26:37 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (20ms)
+2025-10-14 18:36:02 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:36:11 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:36:46 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:38:57 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:39:05 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:39:31 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:39:46 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:39:51 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:42:02 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:42:07 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:42:28 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:42:35 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:42:44 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:42:46 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:43:09 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:44:44 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 18:44:44 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 105
+2025-10-14 18:44:44 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (21ms)
+2025-10-14 18:49:33 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:49:37 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:49:40 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:49:47 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:49:58 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:49:59 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:50:07 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:50:11 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:50:15 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:50:24 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:50:28 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:50:34 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:53:45 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:53:56 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 18:54:32 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:04:09 | INFO     | root                 | log_submission :338  | User 2 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:04:09 | INFO     | root                 | log_submission :338  | User 2 | Problem 2 | SUBMIT_SUCCESS | ID: 106
+2025-10-14 19:04:09 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (17ms)
+2025-10-14 19:05:28 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:07:13 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:08:32 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:09:25 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:10:17 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:12:31 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:14:06 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:14:23 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:14:23 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ERROR | current transaction is aborted, commands ignored until end of transaction block
+
+2025-10-14 19:14:23 | ERROR    | root                 | log_error      :304  | Submission failed: current transaction is aborted, commands ignored until end of transaction block
+
+2025-10-14 19:14:23 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 400 (12ms)
+2025-10-14 19:15:06 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:15:21 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:15:31 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:15:59 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:16:15 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:18:08 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:18:19 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:21:16 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:21:49 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:21:49 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 1
+2025-10-14 19:21:49 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (25ms)
+2025-10-14 19:22:40 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:22:47 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:22:57 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:23:04 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:23:19 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:23:25 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:24:05 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:24:09 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:24:10 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:24:12 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:24:50 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:24:57 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:25:29 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:25:31 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:25:32 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:25:36 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:25:37 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:28:55 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:29:11 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:29:16 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:29:20 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:29:27 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:29:40 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:29:48 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:31:36 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:31:36 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 2
+2025-10-14 19:31:36 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (21ms)
+2025-10-14 19:31:42 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:31:42 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_SUCCESS | ID: 3
+2025-10-14 19:31:42 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (5ms)
+2025-10-14 19:31:57 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:31:57 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_SUCCESS | ID: 4
+2025-10-14 19:31:57 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (15ms)
+2025-10-14 19:32:05 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:32:05 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_SUCCESS | ID: 5
+2025-10-14 19:32:05 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (18ms)
+2025-10-14 19:37:11 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:38:09 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:38:09 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 6
+2025-10-14 19:38:09 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (27ms)
+2025-10-14 19:39:00 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:39:00 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 7
+2025-10-14 19:39:00 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (26ms)
+2025-10-14 19:39:27 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:39:27 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_SUCCESS | ID: 8
+2025-10-14 19:39:27 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (25ms)
+2025-10-14 19:41:14 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:41:14 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_SUCCESS | ID: 9
+2025-10-14 19:41:14 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (25ms)
+2025-10-14 19:42:53 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:42:59 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:43:05 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:43:16 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:43:18 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:43:27 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:43:35 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:43:47 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:43:58 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:43:59 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:45:52 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:46:05 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 19:46:05 | INFO     | root                 | log_submission :338  | User 1 | Problem 2 | SUBMIT_SUCCESS | ID: 10
+2025-10-14 19:46:05 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (22ms)
+2025-10-14 19:51:28 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:51:50 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:52:14 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:52:24 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:52:32 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:52:42 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:52:54 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:53:19 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:53:57 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:54:15 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:54:53 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:55:12 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 19:55:39 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 20:03:02 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 20:03:31 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:03:31 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 11
+2025-10-14 20:03:31 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (20ms)
+2025-10-14 20:03:58 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!

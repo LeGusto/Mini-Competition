@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { API_BASE_URL } from '$lib/config';
   import { authService } from '$lib/services/auth';
 
   export let problemId: string;
@@ -11,6 +12,7 @@
   let selectedLanguage = 'cpp';
   let submitting = false;
   let submissionError = '';
+  let fileInput: HTMLInputElement;
 
   function handleFileSelect(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -38,7 +40,7 @@
       formData.append('language', selectedLanguage);
 
       const response = await authService.authenticatedRequest(
-        'http://localhost:5000/submission/submit',
+        `${API_BASE_URL}/submission/submit`,
         {
           method: 'POST',
           body: formData
@@ -47,6 +49,13 @@
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Clear the file input after successful submission
+        selectedFile = null;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+        
         onSubmissionComplete?.(data);
       } else {
         const errorData = await response.json();
@@ -68,6 +77,11 @@
     selectedLanguage = 'cpp';
     submissionError = '';
     submitting = false;
+    
+    // Clear the file input element
+    if (fileInput) {
+      fileInput.value = '';
+    }
   }
 </script>
 
@@ -90,6 +104,7 @@
     <div class="form-group">
       <label for="file">Solution File:</label>
       <input
+        bind:this={fileInput}
         id="file"
         type="file"
         accept=".cpp,.py,.java,.c,.cc,.cxx"
@@ -191,6 +206,7 @@
     transition: all 0.2s ease;
     text-decoration: none;
     display: inline-block;
+    text-align: center;
   }
 
   .btn:disabled {

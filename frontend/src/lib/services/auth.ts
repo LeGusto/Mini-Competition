@@ -1,7 +1,7 @@
 import { authStore } from '../stores/auth';
+import { API_BASE_URL } from '../config';
 
-// For browser access, always use localhost since the browser runs outside Docker
-const API_BASE = 'http://localhost:5000';
+const API_BASE = API_BASE_URL;
 
 interface LoginData {
   username: string;
@@ -64,8 +64,10 @@ class AuthService {
 
       const result = await response.json();
 
-      if (response.ok && result.user) {
-        return { success: true, user: result.user };
+      if (response.ok && result.user && result.token) {
+        // Auto-login after successful registration
+        authStore.setAuth(result.user, result.token);
+        return { success: true, user: result.user, token: result.token };
       } else {
         return { success: false, error: result.error || 'Registration failed' };
       }

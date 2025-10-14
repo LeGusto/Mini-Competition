@@ -123,33 +123,44 @@ class SubmissionService:
 
     def get_submission_status(self, submission_id):
         """
-        Get submission status from the judge server
+        Get submission status from database (includes judge results after callback)
         """
-        # First get the judge submission ID from our database
+        # Get submission data from database
         query = """
-            SELECT judge_submission_id FROM submissions WHERE id = %s
+            SELECT id, user_id, problem_id, language, submission_time, 
+                   status, judge_response, execution_time, memory_used, judge_submission_id
+            FROM submissions WHERE id = %s
         """
         self.cursor.execute(query, (submission_id,))
-        result = self.cursor.fetchone()
+        submission = self.cursor.fetchone()
 
-        if not result or not result["judge_submission_id"]:
-            raise Exception("Judge submission ID not found")
+        if not submission:
+            raise Exception("Submission not found")
 
-        judge_submission_id = result["judge_submission_id"]
-        judge_url = f"{self.judge_base_url}/submission/{judge_submission_id}"
-        print(f"Getting submission status from: {judge_url}")
+        submission_data = dict(submission) if submission else {}
 
-        try:
-            response = requests.get(judge_url)
-            print(f"Judge status response: {response.status_code} - {response.text}")
-            response.raise_for_status()
-            return {"data": response.json(), "status_code": response.status_code}
-        except requests.RequestException as e:
-            print(f"Request exception: {e}")
-            raise Exception(f"Failed to get submission status: {e}")
-        except Exception as e:
-            print(f"Other exception: {e}")
-            raise Exception(f"Failed to get submission status: {e}")
+        return {
+            "data": {
+                "submission_id": submission_data.get("id"),
+                "problem_id": submission_data.get("problem_id"),
+                "language": submission_data.get("language"),
+                "status": submission_data.get("status", "queued"),
+                "judge_response": submission_data.get("judge_response"),
+                "execution_time": (
+                    float(submission_data.get("execution_time"))
+                    if submission_data.get("execution_time")
+                    else None
+                ),
+                "memory_used": submission_data.get("memory_used"),
+                "judge_submission_id": submission_data.get("judge_submission_id"),
+                "submission_time": (
+                    submission_data.get("submission_time").isoformat()
+                    if submission_data.get("submission_time")
+                    else None
+                ),
+            },
+            "status_code": 200,
+        }
 
     def get_user_submissions(self, user_id):
         """
@@ -287,10 +298,6 @@ class SubmissionService:
 
     def get_active_contest_for_problem(self, problem_id):
         """Get the active contest that contains this problem"""
-        # Use a fresh connection for this operation
-        conn = get_connection()
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
         try:
             # Handle JSONB array properly
             query = """
@@ -303,8 +310,8 @@ class SubmissionService:
                 LIMIT 1
             """
 
-            cursor.execute(query, (f'["{problem_id}"]',))
-            contest = cursor.fetchone()
+            self.cursor.execute(query, (f'["{problem_id}"]',))
+            contest = self.cursor.fetchone()
 
             if contest:
                 print(
@@ -326,29 +333,43 @@ class SubmissionService:
 
             traceback.print_exc()
             return None
-        finally:
-            cursor.close()
-            conn.close()
 
-    def get_all_active_contests_for_user_and_problem(self, user_id, problem_id):
+    def get_all_active_contests_for_user_and_problem(
+        self, user_id, problem_id, submission_time=None
+    ):
         """Get all active contests where the user is registered and the problem exists"""
-        conn = get_connection()
-        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-
         try:
-            query = """
-                SELECT DISTINCT c.id, c.name, c.start_time, c.end_time, c.problems
-                FROM contests c
-                JOIN contest_participants cp ON c.id = cp.contest_id
-                WHERE cp.user_id = %s
-                AND c.problems @> %s::jsonb
-                AND c.start_time <= CURRENT_TIMESTAMP 
-                AND c.end_time >= CURRENT_TIMESTAMP
-                ORDER BY c.start_time DESC
-            """
-
-            cursor.execute(query, (user_id, f'["{problem_id}"]'))
-            contests = cursor.fetchall()
+            if submission_time:
+                # Use submission time for validation - submission must be within contest bounds
+                query = """
+                    SELECT DISTINCT c.id, c.name, c.start_time, c.end_time, c.problems
+                    FROM contests c
+                    JOIN contest_participants cp ON c.id = cp.contest_id
+                    WHERE cp.user_id = %s
+                    AND c.problems @> %s::jsonb
+                    AND %s >= c.start_time
+                    AND %s <= c.end_time
+                    ORDER BY c.start_time DESC
+                """
+                print(f"   Querying contests for submission at {submission_time}")
+                self.cursor.execute(
+                    query,
+                    (user_id, f'["{problem_id}"]', submission_time, submission_time),
+                )
+            else:
+                # Use current timestamp
+                query = """
+                    SELECT DISTINCT c.id, c.name, c.start_time, c.end_time, c.problems
+                    FROM contests c
+                    JOIN contest_participants cp ON c.id = cp.contest_id
+                    WHERE cp.user_id = %s
+                    AND c.problems @> %s::jsonb
+                    AND c.start_time <= CURRENT_TIMESTAMP
+                    AND c.end_time >= CURRENT_TIMESTAMP
+                    ORDER BY c.start_time DESC
+                """
+                self.cursor.execute(query, (user_id, f'["{problem_id}"]'))
+            contests = self.cursor.fetchall()
 
             print(
                 f"🎯 Found {len(contests)} active contests for user {user_id} and problem {problem_id}"
@@ -362,9 +383,6 @@ class SubmissionService:
                 f"❌ Error getting active contests for user {user_id} and problem {problem_id}: {e}"
             )
             return []
-        finally:
-            cursor.close()
-            conn.close()
 
     def create_contest_submission(
         self,

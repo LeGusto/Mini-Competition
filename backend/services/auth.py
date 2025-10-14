@@ -17,11 +17,10 @@ class AuthService:
     """
 
     def __init__(self):
-        self.conn = get_connection()
-        # Use RealDictCursor for dictionary-like access
-        self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         self.JWT_SECRET = JWT_SECRET
         self.JWT_EXPIRATION = JWT_EXPIRATION
+        self.conn = get_connection()
+        self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
 
     def hash_password(self, password):
         """
@@ -59,7 +58,10 @@ class AuthService:
         """
         Verify a password against a hashed password
         """
-        return bcrypt.checkpw(password.encode(), hashed_password.encode())
+        # Handle both string and bytes for hashed_password
+        if isinstance(hashed_password, str):
+            hashed_password = hashed_password.encode()
+        return bcrypt.checkpw(password.encode(), hashed_password)
 
     def create_user(self, username, password):
         """
@@ -68,13 +70,17 @@ class AuthService:
         if self.get_user(username):
             raise Exception("User already exists")
 
-        hashed = self.hash_password(password)
-        self.cursor.execute(
-            "INSERT INTO users (username, password) VALUES (%s, %s)",
-            (username, hashed.decode()),
-        )
-        self.conn.commit()
-        return self.get_user(username)
+        try:
+            hashed = self.hash_password(password)
+            self.cursor.execute(
+                "INSERT INTO users (username, password) VALUES (%s, %s)",
+                (username, hashed.decode()),
+            )
+            self.conn.commit()
+            return self.get_user(username)
+        except Exception as e:
+            self.conn.rollback()
+            raise e
 
     def get_user(self, username):
         """
@@ -97,27 +103,35 @@ class AuthService:
         if not user:
             raise Exception("User not found")
 
-        # Delete related submissions first (due to foreign key constraint)
-        self.cursor.execute("DELETE FROM submissions WHERE user_id = %s", (user["id"],))
-
-        # Delete the user
-        self.cursor.execute("DELETE FROM users WHERE username = %s", (username,))
-        self.conn.commit()
-
-        return True
+        try:
+            # Delete related submissions first (due to foreign key constraint)
+            self.cursor.execute(
+                "DELETE FROM submissions WHERE user_id = %s", (user["id"],)
+            )
+            # Delete the user
+            self.cursor.execute("DELETE FROM users WHERE username = %s", (username,))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            self.conn.rollback()
+            raise e
 
     def delete_user_by_id(self, user_id):
         """
         Delete a user by ID
         """
-        # Delete related submissions first (due to foreign key constraint)
-        self.cursor.execute("DELETE FROM submissions WHERE user_id = %s", (user_id,))
-
-        # Delete the user
-        self.cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
-        self.conn.commit()
-
-        return True
+        try:
+            # Delete related submissions first (due to foreign key constraint)
+            self.cursor.execute(
+                "DELETE FROM submissions WHERE user_id = %s", (user_id,)
+            )
+            # Delete the user
+            self.cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+            self.conn.commit()
+            return True
+        except Exception as e:
+            self.conn.rollback()
+            raise e
 
     def list_users(self):
         """
@@ -133,7 +147,7 @@ class AuthService:
         Authenticate a user and return a JWT token
         """
         user = self.get_user(username)
-        if user and self.verify_password(password, user["password"].encode()):
+        if user and self.verify_password(password, user["password"]):
             return self.generate_token(user["id"], user["username"], user["role"])
         else:
             raise Exception("Invalid username or password")

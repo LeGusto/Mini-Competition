@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { API_BASE_URL } from '$lib/config';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authService } from '$lib/services/auth';
@@ -14,6 +15,7 @@
   let accessStatus: any = null;
   let contestTimer: string = '';
   let timerInterval: any = null;
+  let previousContestStatus: 'not_started' | 'in_progress' | 'ended' = 'not_started';
 
   // Submission state
   let submissionResult: any = null;
@@ -55,7 +57,7 @@
       // Load contest details based on access status
       if (accessStatus?.can_access) {
         // User has full access - load complete contest details
-        const contestsResponse = await authService.authenticatedRequest('http://localhost:5000/contests');
+        const contestsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/contests`);
         if (contestsResponse.ok) {
           const contests = await contestsResponse.json();
           contest = contests.find((c: any) => c.id.toString() === contestId);
@@ -102,7 +104,7 @@
 
       // Load problem metadata
       const problemResponse = await authService.authenticatedRequest(
-        `http://localhost:5000/general/problem/${problemId}/metadata`
+        `${API_BASE_URL}/general/problem/${problemId}/metadata`
       );
       if (problemResponse.ok) {
         problem = await problemResponse.json();
@@ -122,7 +124,7 @@
   async function loadProblemStatement() {
     try {
       const response = await authService.authenticatedRequest(
-        `http://localhost:5000/general/problem/${problemId}/statement`
+        `${API_BASE_URL}/general/problem/${problemId}/statement`
       );
       
       if (response.ok) {
@@ -200,6 +202,9 @@
       clearInterval(timerInterval);
     }
 
+    // Track if this is the first update
+    let isFirstUpdate = true;
+
     const updateTimer = () => {
       if (!contest) return;
 
@@ -224,16 +229,33 @@
         return;
       }
 
+      // Determine current contest status
+      let currentStatus: 'not_started' | 'in_progress' | 'ended';
       if (now < startTime) {
+        currentStatus = 'not_started';
         targetTime = startTime;
         timerType = 'Starts in: ';
       } else if (now >= startTime && now < endTime) {
+        currentStatus = 'in_progress';
         targetTime = endTime;
         timerType = 'Ends in: ';
       } else {
+        currentStatus = 'ended';
         contestTimer = 'Contest Ended';
         return;
       }
+
+      // Check if contest status changed from not_started to in_progress
+      // Only trigger refresh if this is not the first update (to avoid refresh loop on page load)
+      if (!isFirstUpdate && previousContestStatus === 'not_started' && currentStatus === 'in_progress') {
+        console.log('Contest has started! Refreshing page...');
+        window.location.reload();
+        return;
+      }
+
+      // Update previous status and mark that first update is done
+      previousContestStatus = currentStatus;
+      isFirstUpdate = false;
 
       const timeDiff = targetTime.getTime() - now.getTime();
 
@@ -304,7 +326,7 @@
 
     <div class="navigation-above">
       <button class="btn btn-secondary" on:click={goBackToContest}>
-        ← Back to Contest
+        Back to Contest
       </button>
     </div>
 
@@ -565,6 +587,7 @@
     transition: all 0.2s ease;
     text-decoration: none;
     display: inline-block;
+    text-align: center;
   }
 
   .btn:disabled {

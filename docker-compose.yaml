@@ -7,17 +7,12 @@ services:
       - "5000:5000"
     networks:
       - shared-network
+    env_file:
+      - ./backend/.env
     environment:
-      - FLASK_ENV=development
-      - JWT_SECRET=your-secret-key-change-this
-      - JWT_EXPIRATION=3600
+      # Override with docker-compose specific values
       - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=mini_competition_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
       - JUDGE_HOST=mini-judge
-      - JUDGE_PORT=3000
     volumes:
       - ./backend:/app/backend
       - /var/run/docker.sock:/var/run/docker.sock
@@ -51,6 +46,8 @@ services:
       dockerfile: docker/Dockerfile
     ports:
       - "5173:5173"
+    env_file:
+      - ./frontend/.env
     volumes:
       - ./frontend:/app/frontend
     networks:

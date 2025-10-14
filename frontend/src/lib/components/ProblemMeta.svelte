@@ -30,17 +30,20 @@
   .meta-item {
     display: flex;
     justify-content: space-between;
+    align-items: center;
   }
 
   .meta-label {
     color: #888;
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
+    text-align: left;
   }
 
   .meta-value {
     color: #e0e0e0;
     font-family: 'Courier New', monospace;
     font-weight: 600;
+    text-align: center;
   }
 </style>
