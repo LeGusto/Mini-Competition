@@ -134,21 +134,3 @@ JUDGE_HOST=mini-judge
 JUDGE_PORT=3000
 ```
 
-## Known Issues
-
-- JWT tokens need manual refresh (no auto-refresh yet)
-- Leaderboard can be slow with 100+ participants
-- No rate limiting on submission endpoint
-- Timezone handling could be more robust
-
-## Future Plans
-
-- WebSocket support for real-time updates
-- Redis caching for leaderboards
-- Problem statement editor in admin panel
-- Submission code syntax highlighting
-- Export leaderboard as CSV
-
-## License
-
-MIT
