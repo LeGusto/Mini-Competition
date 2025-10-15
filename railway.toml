@@ -7,8 +7,6 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "/app/start.sh"
-healthcheckPath = "/"
-healthcheckTimeout = 600
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
@@ -18,11 +16,11 @@ variables = {
   FLASK_DEBUG = "False",
   JWT_SECRET = "your-super-secret-jwt-key-change-this-in-production",
   VITE_API_BASE_URL = "http://localhost:5000",
-  DB_HOST = "localhost",
-  DB_PORT = "5432",
-  DB_NAME = "mini_competition_db",
-  DB_USER = "postgres",
-  DB_PASSWORD = "your-secure-db-password",
+  DB_HOST = "${{Postgres.PGHOST}}",
+  DB_PORT = "${{Postgres.PGPORT}}",
+  DB_NAME = "${{Postgres.PGDATABASE}}",
+  DB_USER = "${{Postgres.PGUSER}}",
+  DB_PASSWORD = "${{Postgres.PGPASSWORD}}",
   JUDGE_HOST = "your-mini-judge-url.railway.app",
   JUDGE_PORT = "3000"
 }
