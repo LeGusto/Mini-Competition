@@ -212,3 +212,31 @@
 2025-10-14 20:03:31 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 11
 2025-10-14 20:03:31 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (20ms)
 2025-10-14 20:03:58 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 20:10:51 | WARNING  | werkzeug             | _log           :97   |  * Debugger is active!
+2025-10-14 20:14:33 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:14:33 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 12
+2025-10-14 20:14:33 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (33ms)
+2025-10-14 20:15:15 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:15:15 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 13
+2025-10-14 20:15:15 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (25ms)
+2025-10-14 20:16:03 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:16:03 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 14
+2025-10-14 20:16:03 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (24ms)
+2025-10-14 20:16:46 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:16:46 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 15
+2025-10-14 20:16:46 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (27ms)
+2025-10-14 20:19:19 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:19:19 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 16
+2025-10-14 20:19:19 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (28ms)
+2025-10-14 20:19:56 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:19:56 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 17
+2025-10-14 20:19:56 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (29ms)
+2025-10-14 20:21:40 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:21:40 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 18
+2025-10-14 20:21:40 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (9ms)
+2025-10-14 20:22:15 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:22:15 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 19
+2025-10-14 20:22:15 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (33ms)
+2025-10-14 20:22:49 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_ATTEMPT | Language: cpp
+2025-10-14 20:22:49 | INFO     | root                 | log_submission :338  | User 1 | Problem 1 | SUBMIT_SUCCESS | ID: 20
+2025-10-14 20:22:49 | INFO     | root                 | log_request    :322  | POST /submission/submit -> 200 (14ms)
