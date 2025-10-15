@@ -39,10 +39,13 @@ def serve_frontend(path=""):
     # But if we get here, it means the API route wasn't found
     if path and any(
         path.startswith(prefix)
-        for prefix in ["api/", "auth/", "contest/", "submission/", "general/"]
+        for prefix in ["api/", "auth/", "submission/", "general/"]
     ):
         print(f"API route not found: {path}")
         return jsonify({"error": "API endpoint not found", "path": path}), 404
+
+    # Special handling for contest routes - don't treat them as API routes
+    # when they're being accessed from the frontend SPA
 
     try:
         # Check if it's a static file request (has file extension)

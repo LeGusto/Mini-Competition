@@ -51,7 +51,7 @@ def create_contest():
         return jsonify({"message": str(e)}), 500
 
 
-@contest_bp.route("/contest/<contest_id>", methods=["GET"])
+@contest_bp.route("/api/contest/<contest_id>", methods=["GET"])
 def get_contest(contest_id):
     """Get a contest"""
     print("contest_id===", contest_id, flush=True)

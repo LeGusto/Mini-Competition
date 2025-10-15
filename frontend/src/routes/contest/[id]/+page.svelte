@@ -124,7 +124,7 @@
 
       // Load problems only if user has access
       if (accessStatus?.can_access) {
-        const response = await authService.authenticatedRequest(`${API_BASE_URL}/contest/${contestId}`);
+        const response = await authService.authenticatedRequest(`${API_BASE_URL}/api/contest/${contestId}`);
         if (response.ok) {
           const data = await response.json();
           problems = data.problems || [];
