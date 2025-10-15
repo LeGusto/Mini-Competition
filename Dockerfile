@@ -42,14 +42,27 @@ python main.py &
 BACKEND_PID=\$!
 
 # Wait for backend to be ready
-echo "⏳ Waiting for backend..."
-sleep 10
+echo "⏳ Waiting for backend to start..."
+sleep 15
+
+# Check if backend is running
+if ! curl -f http://localhost:5000/healthcheck >/dev/null 2>&1; then
+    echo "❌ Backend health check failed"
+    exit 1
+fi
+
+echo "✅ Backend is healthy"
 
 # Start frontend
 cd /app/frontend
 echo "⚡ Starting SvelteKit frontend..."
 npm run preview -- --port 3000 --host 0.0.0.0 &
 FRONTEND_PID=\$!
+
+# Wait a bit for frontend to start
+sleep 10
+
+echo "🎉 All services started successfully!"
 
 # Function to cleanup on exit
 cleanup() {
@@ -61,8 +74,18 @@ cleanup() {
 # Trap signals for graceful shutdown
 trap cleanup SIGTERM SIGINT
 
-# Wait for all services
-wait \$BACKEND_PID \$FRONTEND_PID
+# Keep script running and wait for services
+while true; do
+    if ! kill -0 \$BACKEND_PID 2>/dev/null; then
+        echo "❌ Backend process died"
+        exit 1
+    fi
+    if ! kill -0 \$FRONTEND_PID 2>/dev/null; then
+        echo "❌ Frontend process died"
+        exit 1
+    fi
+    sleep 10
+done
 EOF
 
 RUN chmod +x /app/start.sh
@@ -73,9 +96,9 @@ RUN mkdir -p /app/tmp
 # Expose ports
 EXPOSE 3000 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD curl -f http://localhost:5000/healthcheck || exit 1
+# Health check - try backend first, then frontend
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
+  CMD curl -f http://localhost:5000/healthcheck || curl -f http://localhost:3000/ || exit 1
 
 # Start services
 CMD ["/app/start.sh"]
