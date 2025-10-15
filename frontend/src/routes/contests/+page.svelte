@@ -22,7 +22,7 @@
     try {
       loading = true;
       const userTimezone = $authStore.user?.timezone || 'UTC';
-      const response = await authService.authenticatedRequest(`${API_BASE_URL}/contests?timezone=${encodeURIComponent(userTimezone)}`);
+      const response = await authService.authenticatedRequest(`${API_BASE_URL}/api/contests?timezone=${encodeURIComponent(userTimezone)}`);
 
       if (response.ok) {
         contests = await response.json();

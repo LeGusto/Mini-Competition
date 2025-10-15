@@ -57,7 +57,7 @@
       // Determine what to load based on access status
       if (accessStatus?.can_access) {
         // User has full access - load complete contest details
-        const contestsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/contests`);
+        const contestsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/api/contests`);
         if (contestsResponse.ok) {
           const contests = await contestsResponse.json();
           contest = contests.find((c: any) => c.id.toString() === contestId);
@@ -72,7 +72,7 @@
         }
       } else if (accessStatus && accessStatus.can_register) {
         // User can register - load basic contest info for registration
-        const contestsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/contests`);
+        const contestsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/api/contests`);
         if (contestsResponse.ok) {
           const contests = await contestsResponse.json();
           contest = contests.find((c: any) => c.id.toString() === contestId);
@@ -87,7 +87,7 @@
         }
       } else if (accessStatus?.is_registered && accessStatus?.contest_status === 'upcoming') {
         // User is registered for upcoming contest - load basic info but don't show details
-        const contestsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/contests`);
+        const contestsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/api/contests`);
         if (contestsResponse.ok) {
           const contests = await contestsResponse.json();
           const fullContest = contests.find((c: any) => c.id.toString() === contestId);

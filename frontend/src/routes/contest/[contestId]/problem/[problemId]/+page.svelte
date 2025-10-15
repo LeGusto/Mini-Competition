@@ -57,7 +57,7 @@
       // Load contest details based on access status
       if (accessStatus?.can_access) {
         // User has full access - load complete contest details
-        const contestsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/contests`);
+        const contestsResponse = await authService.authenticatedRequest(`${API_BASE_URL}/api/contests`);
         if (contestsResponse.ok) {
           const contests = await contestsResponse.json();
           contest = contests.find((c: any) => c.id.toString() === contestId);

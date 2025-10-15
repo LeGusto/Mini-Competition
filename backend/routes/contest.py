@@ -8,7 +8,7 @@ contest_service = ContestService()
 # DELETE * FROM contests WHERE name='Contest 1'
 
 
-@contest_bp.route("/contests", methods=["GET"])
+@contest_bp.route("/api/contests", methods=["GET"])
 @require_auth
 def get_contests():
     """Get all contests"""

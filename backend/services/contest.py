@@ -16,7 +16,11 @@ class ContestService:
     def __init__(self):
         judge_host = os.getenv("JUDGE_HOST", "mini-judge")
         judge_port = os.getenv("JUDGE_PORT", "3000")
-        self.judge_base_url = f"http://{judge_host}:{judge_port}"
+        # Use HTTPS for Railway domains, HTTP for local development
+        if judge_host.endswith(".railway.app"):
+            self.judge_base_url = f"https://{judge_host}"
+        else:
+            self.judge_base_url = f"http://{judge_host}:{judge_port}"
         # Initialize with UTC timezone by default
         self.local_timezone = pytz.timezone("UTC")
         self.conn = get_connection()

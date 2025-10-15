@@ -20,7 +20,11 @@ class SubmissionService:
         self.cursor = self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
         judge_host = os.getenv("JUDGE_HOST", "mini-judge")
         judge_port = os.getenv("JUDGE_PORT", "3000")
-        self.judge_base_url = f"http://{judge_host}:{judge_port}"
+        # Use HTTPS for Railway domains, HTTP for local development
+        if judge_host.endswith(".railway.app"):
+            self.judge_base_url = f"https://{judge_host}"
+        else:
+            self.judge_base_url = f"http://{judge_host}:{judge_port}"
         self.upload_folder = "tmp"
         os.makedirs(self.upload_folder, exist_ok=True)
 
@@ -74,7 +78,17 @@ class SubmissionService:
             print(f"Submitting to judge at: {judge_url}")
 
             # Create callback URL for the judge to send results back
-            callback_url = f"http://backend:5000/submission/result"
+            # Use Railway public domain for callback
+            callback_url = os.getenv("RAILWAY_STATIC_URL", "http://localhost:5000")
+            if callback_url.startswith("http://") and "railway.app" in callback_url:
+                callback_url = callback_url.replace("http://", "https://")
+            elif not callback_url.startswith(("http://", "https://")):
+                # If no protocol is specified, assume https for Railway domains
+                if "railway.app" in callback_url:
+                    callback_url = f"https://{callback_url}"
+                else:
+                    callback_url = f"http://{callback_url}"
+            callback_url = f"{callback_url}/submission/result"
             print(f"Callback URL: {callback_url}")
 
             with open(file_path, "rb") as f:
@@ -89,7 +103,10 @@ class SubmissionService:
 
                 judge_response = requests.post(judge_url, files=files, data=payload)
                 print(f"Judge response status: {judge_response.status_code}")
-                print(f"Judge response: {judge_response.text}")
+                print(f"Judge response text: {judge_response.text}")
+                if judge_response.status_code != 200:
+                    print(f"Judge URL was: {judge_url}")
+                    print(f"Payload was: {payload}")
                 judge_response.raise_for_status()
 
                 # Parse the judge response to get the judge submission ID
