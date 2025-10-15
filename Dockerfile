@@ -93,8 +93,8 @@ RUN chmod +x /app/start.sh
 # Create necessary directories
 RUN mkdir -p /app/tmp
 
-# Expose ports
-EXPOSE 3000 5000
+# Expose ports - frontend on 3000, backend on 5000
+EXPOSE 3000
 
 # Health check - wait longer for services to start
 HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
