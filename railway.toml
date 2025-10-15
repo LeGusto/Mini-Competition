@@ -1,13 +1,27 @@
+# Railway configuration for Mini-Competition
+# Connects to external Mini-Judge service
+
 [build]
 builder = "dockerfile"
-dockerfilePath = "docker-compose.yaml"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "docker-compose up"
+startCommand = "/app/start.sh"
 healthcheckPath = "/healthcheck"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
 [environments.production]
-variables = { NODE_ENV = "production", FLASK_ENV = "production" }
+variables = { 
+  FLASK_ENV = "production", 
+  FLASK_DEBUG = "False",
+  JWT_SECRET = "your-super-secret-jwt-key-change-this-in-production",
+  DB_HOST = "localhost",
+  DB_PORT = "5432",
+  DB_NAME = "mini_competition_db",
+  DB_USER = "postgres",
+  DB_PASSWORD = "your-secure-db-password",
+  JUDGE_HOST = "your-mini-judge-url.railway.app",
+  JUDGE_PORT = "3000"
+}
