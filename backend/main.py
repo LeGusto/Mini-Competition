@@ -7,7 +7,7 @@ from routes.auth import auth_bp
 from routes.contest import contest_bp
 from services.connection import get_connection
 
-app = Flask(__name__, static_folder='../frontend/build', static_url_path='')
+app = Flask(__name__, static_folder="../frontend/build", static_url_path="")
 CORS(
     app,
     origins=[
@@ -42,14 +42,15 @@ def healthcheck():
     except Exception as e:
         return jsonify({"status": "unhealthy", "error": str(e)}), 503
 
-@app.route("/", defaults={'path': ''})
+
+@app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_frontend(path):
     """Serve frontend files"""
     if path and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
     else:
-        return send_from_directory(app.static_folder, 'index.html')
+        return send_from_directory(app.static_folder, "index.html")
 
 
 if __name__ == "__main__":
