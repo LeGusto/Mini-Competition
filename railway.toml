@@ -6,7 +6,7 @@ builder = "dockerfile"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "/app/start.sh"
+startCommand = "python main.py"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
@@ -15,7 +15,7 @@ variables = {
   FLASK_ENV = "production", 
   FLASK_DEBUG = "False",
   JWT_SECRET = "your-super-secret-jwt-key-change-this-in-production",
-  VITE_API_BASE_URL = "http://localhost:5000",
+  VITE_API_BASE_URL = "",
   DB_HOST = "${{Postgres.PGHOST}}",
   DB_PORT = "${{Postgres.PGPORT}}",
   DB_NAME = "${{Postgres.PGDATABASE}}",

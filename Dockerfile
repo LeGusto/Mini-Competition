@@ -28,77 +28,23 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-# Create startup script
-COPY <<EOF /app/start.sh
-#!/bin/bash
-set -e
+# Copy built frontend to backend directory
+RUN cp -r build/* ../
 
-echo "🚀 Starting Mini-Competition Platform..."
+# Go back to backend directory
+WORKDIR /app
 
-# Start backend
-cd /app
-echo "🐍 Starting Flask backend..."
-python main.py &
-BACKEND_PID=\$!
-
-# Wait for backend to be ready
-echo "⏳ Waiting for backend to start..."
-sleep 15
-
-# Check if backend is running
-if ! curl -f http://localhost:5000/healthcheck >/dev/null 2>&1; then
-    echo "❌ Backend health check failed"
-    exit 1
-fi
-
-echo "✅ Backend is healthy"
-
-# Start frontend
-cd /app/frontend
-echo "⚡ Starting SvelteKit frontend..."
-npm run preview -- --port 3000 --host 0.0.0.0 &
-FRONTEND_PID=\$!
-
-# Wait a bit for frontend to start
-sleep 10
-
-echo "🎉 All services started successfully!"
-
-# Function to cleanup on exit
-cleanup() {
-    echo "🛑 Shutting down services..."
-    kill \$BACKEND_PID \$FRONTEND_PID 2>/dev/null || true
-    exit 0
-}
-
-# Trap signals for graceful shutdown
-trap cleanup SIGTERM SIGINT
-
-# Keep script running and wait for services
-while true; do
-    if ! kill -0 \$BACKEND_PID 2>/dev/null; then
-        echo "❌ Backend process died"
-        exit 1
-    fi
-    if ! kill -0 \$FRONTEND_PID 2>/dev/null; then
-        echo "❌ Frontend process died"
-        exit 1
-    fi
-    sleep 10
-done
-EOF
-
-RUN chmod +x /app/start.sh
+# No startup script needed - Flask will serve both API and frontend
 
 # Create necessary directories
 RUN mkdir -p /app/tmp
 
-# Expose ports - frontend on 3000, backend on 5000
-EXPOSE 3000
+# Expose port
+EXPOSE 5000
 
-# Health check - wait longer for services to start
-HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
-  CMD curl -f http://localhost:3000/ || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:5000/healthcheck || exit 1
 
-# Start services
-CMD ["/app/start.sh"]
+# Start Flask app
+CMD ["python", "main.py"]
