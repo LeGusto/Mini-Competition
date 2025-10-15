@@ -96,9 +96,9 @@ RUN mkdir -p /app/tmp
 # Expose ports
 EXPOSE 3000 5000
 
-# Health check - try backend first, then frontend
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
-  CMD curl -f http://localhost:5000/healthcheck || curl -f http://localhost:3000/ || exit 1
+# Health check - wait longer for services to start
+HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
+  CMD curl -f http://localhost:3000/ || exit 1
 
 # Start services
 CMD ["/app/start.sh"]
