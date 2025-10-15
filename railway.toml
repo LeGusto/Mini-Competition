@@ -7,6 +7,8 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "/app/start.sh"
+healthcheckPath = "/"
+healthcheckTimeout = 600
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
@@ -15,6 +17,7 @@ variables = {
   FLASK_ENV = "production", 
   FLASK_DEBUG = "False",
   JWT_SECRET = "your-super-secret-jwt-key-change-this-in-production",
+  VITE_API_BASE_URL = "https://mini-competition-production.up.railway.app:5000",
   DB_HOST = "localhost",
   DB_PORT = "5432",
   DB_NAME = "mini_competition_db",
