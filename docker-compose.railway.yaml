@@ -6,22 +6,18 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_NAME=mini_competition_db
-      - DB_USER=postgres
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - JUDGE_HOST=mini-judge
-      - JUDGE_PORT=3000
+      # Railway will inject these via environment variables
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JUDGE_HOST=${JUDGE_HOST}
+      - JUDGE_PORT=${JUDGE_PORT}
       - JWT_SECRET=${JWT_SECRET}
       - FLASK_ENV=production
       - FLASK_DEBUG=False
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
-    depends_on:
-      - postgres
-      - mini-judge
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/healthcheck"]
       interval: 30s
@@ -32,13 +28,11 @@ services:
   postgres:
     image: postgres:15
     environment:
-      - POSTGRES_DB=mini_competition_db
-      - POSTGRES_USER=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-mini_competition_db}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
   frontend:
@@ -55,15 +49,13 @@ services:
 
   mini-judge:
     build:
-      context: ../Mini-Judge
+      context: ../../Mini-Judge
       dockerfile: dockerfile
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
@@ -71,6 +63,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-volumes:
-  postgres_data:
