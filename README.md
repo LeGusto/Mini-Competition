@@ -4,6 +4,15 @@ A competitive programming contest platform I built for running ICPC-style contes
 
 Requires [Mini-Judge](https://github.com/LeGusto/Mini-Judge) for code evaluation.
 
+<img width="500" height="250" alt="sit6" src="https://github.com/user-attachments/assets/19f02944-0c1a-4493-b57d-795cfa918f66" />
+<img width="500" height="250" alt="sit1" src="https://github.com/user-attachments/assets/cc87ddf8-4ae8-4b7d-90de-c9fce6c8195b" />
+<img width="500" height="250" alt="sit2" src="https://github.com/user-attachments/assets/dff75eab-94e7-4c94-b68f-fb1f9919d16c" />
+<img width="500" height="250" alt="sit3" src="https://github.com/user-attachments/assets/d4867e7c-20fc-4d4e-a52e-d367ac5d0002" />
+<img width="500" height="250" alt="sit4" src="https://github.com/user-attachments/assets/16ae66d8-a5ae-4756-a9d0-284d3df0449b" />
+<img width="500" height="250" alt="sit5" src="https://github.com/user-attachments/assets/6780404b-1ce9-446f-80b9-dc8f75b0550c" />
+<img width="500" height="911" alt="sit7" src="https://github.com/user-attachments/assets/c1d2add6-bb34-44f5-b1bd-dec0598312e4" />
+
+
 ## What It Does
 
 **Contest Management**
